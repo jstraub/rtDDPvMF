@@ -4,8 +4,8 @@
 #include <realtimeDDPvMF_openni.hpp>
 
 // Utilities and system includes
-#include <helper_functions.h>
-#include <helper_cuda.h>
+//#include <helper_functions.h>
+#include <nvidia/helper_cuda.h>
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;

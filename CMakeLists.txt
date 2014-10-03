@@ -3,19 +3,23 @@ cmake_minimum_required(VERSION 2.8.1)
 include(ExternalProject)
 ExternalProject_add(dpMM
   GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/dpMM.git/
+  UPDATE_COMMAND git pull
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dpMM                                   
   CMAKE_COMMAND cmake .
-  BUILD_COMMAND make dpmm                                                           
-  INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
+  BUILD_COMMAND make -j6 #dpmm #dpStickGMM dpDirMM
+  #INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
+  INSTALL_COMMAND cmake -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dpMM -P cmake_install.cmake
   #INSTALL_COMMAND make install PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dpMM
 )   
 
 ExternalProject_add(libRtMF
   GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/rtmf.git/
+  UPDATE_COMMAND git pull
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/rtmf
   CMAKE_COMMAND cmake .
-  BUILD_COMMAND make rtmf                                           
-  INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
+  BUILD_COMMAND make -j6 #rtmf #realtimeMF_openni
+  #INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
+  INSTALL_COMMAND cmake -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/rtmf -P cmake_install.cmake
   #INSTALL_COMMAND make install PREFIX=${CMAKE_CURRENT_BINARY_DIR}/rtmf
 )   
 
@@ -41,6 +45,8 @@ FIND_PACKAGE (Boost 1.46.1 REQUIRED)
 
 include_directories(                                                            
   include
+  ./build/dpMM/include
+  ./build/rtmf/include
   ${EIGEN3_INCLUDE_DIR}                                       
   /usr/include                                        
   #$ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1.bak/
@@ -49,19 +55,20 @@ include_directories(
   #/usr/include/pcl-1.7/
   /usr/include/ni
   #  /usr/include/vtk-5.8/
-
   ${Boost_INCLUDE_DIRS}
-  $ENV{WORKSPACE_HOME}/research/dpMM/include
-  $ENV{WORKSPACE_HOME}/research/rtmf/include
-  $ENV{WORKSPACE_HOME}/research/rtmf/common/inc
+  # $ENV{WORKSPACE_HOME}/research/dpMM/include
+  #$ENV{WORKSPACE_HOME}/research/rtmf/include
+  #$ENV{WORKSPACE_HOME}/research/rtmf/common/inc
 )                                                                               
                                                                                 
 link_directories(
   $ENV{WORKSPACE_HOME}/3rdparty/lib/vtk-5.8/
   ${Boost_LIBRARY_DIRS}
   $ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1/build
-  $ENV{WORKSPACE_HOME}/research/dpMM/build/
-  $ENV{WORKSPACE_HOME}/research/rtmf/build
+  #  $ENV{WORKSPACE_HOME}/research/dpMM/build/
+  #$ENV{WORKSPACE_HOME}/research/rtmf/build
+  ./build/dpMM/lib/
+  ./build/rtmf/lib/
 )
 
 cuda_add_executable(realtimeDDPvMF_openni
@@ -77,3 +84,7 @@ target_link_libraries (realtimeDDPvMF_openni
   vtkCommon vtkFiltering vtkRendering vtkGraphics
   opencv_core opencv_highgui opencv_contrib)
 
+install(DIRECTORY include/ DESTINATION include/                                 
+  FILES_MATCHING PATTERN "*.h")                                         
+install(DIRECTORY include/ DESTINATION include/                                 
+  FILES_MATCHING PATTERN "*.hpp")  

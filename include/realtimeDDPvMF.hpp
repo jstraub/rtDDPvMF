@@ -17,8 +17,8 @@
 #include <cuda_runtime.h>
 
 // Utilities and system includes
-#include <helper_functions.h>
-#include <helper_cuda.h>
+//#include <helper_functions.h>
+#include <nvidia/helper_cuda.h>
 
 #include <cuda_pc_helpers.h>
 #include <convolutionSeparable_common.h>
