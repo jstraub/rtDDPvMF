@@ -47,6 +47,8 @@ include_directories(
   include
   ./build/dpMM/include
   ./build/rtmf/include
+  ../rtDDPvMF-build/rtmf/include
+  ../rtDDPvMF-build/dpMM/include
   ${EIGEN3_INCLUDE_DIR}                                       
   /usr/include                                        
   #$ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1.bak/
@@ -69,6 +71,8 @@ link_directories(
   #$ENV{WORKSPACE_HOME}/research/rtmf/build
   ./build/dpMM/lib/
   ./build/rtmf/lib/
+  ../rtDDPvMF-build/dpMM/lib/
+  ../rtDDPvMF-build/rtmf/lib/
 )
 
 cuda_add_executable(realtimeDDPvMF_openni
