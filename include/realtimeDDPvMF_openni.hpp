@@ -11,7 +11,8 @@
 #include <realtimeDDPvMF.hpp>
 
 using namespace Eigen;
-using namespace std;
+using std::cout;
+using std::endl;
 
 class RealtimeDDPvMF_openni : public RealtimeDDPvMF
 {

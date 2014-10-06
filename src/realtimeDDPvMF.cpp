@@ -292,7 +292,7 @@ void RealtimeDDPvMF::visualizePc()
 
   cv::Mat zIrgb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
   cv::Mat Icomb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
-  stringstream ss;
+  std::stringstream ss;
 
   Timer t;
   while (!viewer->wasStopped ())

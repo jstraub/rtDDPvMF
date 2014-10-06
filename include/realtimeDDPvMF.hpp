@@ -10,6 +10,7 @@
 #include <opencv2/contrib/contrib.hpp>
 
 #include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <Eigen/Dense>
 
@@ -33,6 +34,7 @@
 #include <timer.hpp>
 #include <timerLog.hpp>
 
+#include <clusterer.hpp>
 #include <ddpvMFmeans.hpp>
 #include <ddpvMFmeansCUDA.hpp>
 
