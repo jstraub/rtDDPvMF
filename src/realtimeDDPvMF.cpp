@@ -20,26 +20,13 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode)
   (*spx_) << 1,0,0; // init just to get the dimensions right.
   if(mode_.compare("dp") == 0)
   {
-    //#ifndef WEIGHTED
-    //    optSO3_ = new OptSO3(25.0f*M_PI/180.0f,d_n,w,h);//,d_weights);
-    //#else
-    //    optSO3_ = new OptSO3(25.0f*M_PI/180.0f,d_n,w,h,d_weights);
-    //#endif
-    //    nCGIter_ = 10; // cannot do that many iterations
     //    pddpvmf_ =  new DPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
   }else if (mode_.compare("ddp") == 0){
     //TODO
     //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
     pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-    //#ifndef WEIGHTED
-    //    optSO3_ = new OptSO3Approx(25.0f*M_PI/180.0f,d_n,w,h);//,d_weights);
-    //#else
-    //    optSO3_ = new OptSO3Approx(25.0f*M_PI/180.0f,d_n,w,h,d_weights);
-    //#endif
-    //    nCGIter_ = 25;
   }
 }
-
 
 RealtimeDDPvMF::~RealtimeDDPvMF()
 {
@@ -213,14 +200,14 @@ void RealtimeDDPvMF::visualizePc()
 //        viewer->addText(ss.str(),10,20, "residual", v1);
 
 
-      cv::Mat nI(n_.height,n_.width,CV_32FC3); 
-      for(uint32_t i=0; i<n_.width; ++i)
-        for(uint32_t j=0; j<n_.height; ++j)
+      cv::Mat nI(n_cp_->height,n_cp_->width,CV_32FC3); 
+      for(uint32_t i=0; i<n_cp_->width; ++i)
+        for(uint32_t j=0; j<n_cp_->height; ++j)
         {
           // nI is BGR but I want R=x G=y and B=z
-          nI.at<cv::Vec3f>(j,i)[0] = (1.0f+n_.points[i+j*n_.width].z)*0.5f; // to match pc
-          nI.at<cv::Vec3f>(j,i)[1] = (1.0f+n_.points[i+j*n_.width].y)*0.5f; 
-          nI.at<cv::Vec3f>(j,i)[2] = (1.0f+n_.points[i+j*n_.width].x)*0.5f; 
+          nI.at<cv::Vec3f>(j,i)[0] = (1.0f+n_cp_->points[i+j*n_cp_->width].z)*0.5f; // to match pc
+          nI.at<cv::Vec3f>(j,i)[1] = (1.0f+n_cp_->points[i+j*n_cp_->width].y)*0.5f; 
+          nI.at<cv::Vec3f>(j,i)[2] = (1.0f+n_cp_->points[i+j*n_cp_->width].x)*0.5f; 
         }
       cv::imshow("normals",nI); 
 

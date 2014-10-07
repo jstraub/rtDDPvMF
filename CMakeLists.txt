@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8.1)
 include(ExternalProject)
 ExternalProject_add(dpMM
   GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/dpMM.git/
+  GIT_TAG master
   UPDATE_COMMAND git pull
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dpMM                                   
   CMAKE_COMMAND cmake .
@@ -14,6 +15,7 @@ ExternalProject_add(dpMM
 
 ExternalProject_add(libCudaPcl                                                     
   GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/cudaPcl.git   
+  GIT_TAG master
   UPDATE_COMMAND git pull                                                       
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/cudaPcl                                    
   CMAKE_COMMAND cmake .                                                         
@@ -53,6 +55,7 @@ find_package (Eigen3 REQUIRED)
 find_package (CUDA REQUIRED)
 find_package (OpenCV REQUIRED)
 FIND_PACKAGE (Boost 1.46.1 REQUIRED)
+
 
 include_directories(                                                            
   include
@@ -98,6 +101,8 @@ target_link_libraries (realtimeDDPvMF_openni
   OpenNI XnVNite_1_5_2
   vtkCommon vtkFiltering vtkRendering vtkGraphics
   opencv_core opencv_highgui opencv_contrib)
+
+ADD_DEPENDENCIES(realtimeDDPvMF_openni dpMM libCudaPcl)
 
 install(DIRECTORY include/ DESTINATION include/                                 
   FILES_MATCHING PATTERN "*.h")                                         
