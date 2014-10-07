@@ -1,94 +1,82 @@
 #include <realtimeDDPvMF.hpp>
 
+RealtimeDDPvMF::RealtimeDDPvMF(std::string mode) 
+  :  tLog_("./timer.log",3,"TimerLog"),
+  residual_(0.0), nIter_(4), 
+  nFrame_(0), resultsPath_("../results/"),
+  normalExtractor_(570.f),
+  fout_("./stats.log",ofstream::out),
+  update(false), updateRGB_(false), 
+  mode_(mode), 
+  lambda_(cos(93.0*M_PI/180.0)-1.), beta_(3.e5), Q_(-1.e3),
+  rndGen_(91),
+  JET_r ({0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.00588235294117645,0.02156862745098032,0.03725490196078418,0.05294117647058827,0.06862745098039214,0.084313725490196,0.1000000000000001,0.115686274509804,0.1313725490196078,0.1470588235294117,0.1627450980392156,0.1784313725490196,0.1941176470588235,0.2098039215686274,0.2254901960784315,0.2411764705882353,0.2568627450980392,0.2725490196078431,0.2882352941176469,0.303921568627451,0.3196078431372549,0.3352941176470587,0.3509803921568628,0.3666666666666667,0.3823529411764706,0.3980392156862744,0.4137254901960783,0.4294117647058824,0.4450980392156862,0.4607843137254901,0.4764705882352942,0.4921568627450981,0.5078431372549019,0.5235294117647058,0.5392156862745097,0.5549019607843135,0.5705882352941174,0.5862745098039217,0.6019607843137256,0.6176470588235294,0.6333333333333333,0.6490196078431372,0.664705882352941,0.6803921568627449,0.6960784313725492,0.7117647058823531,0.7274509803921569,0.7431372549019608,0.7588235294117647,0.7745098039215685,0.7901960784313724,0.8058823529411763,0.8215686274509801,0.8372549019607844,0.8529411764705883,0.8686274509803922,0.884313725490196,0.8999999999999999,0.9156862745098038,0.9313725490196076,0.947058823529412,0.9627450980392158,0.9784313725490197,0.9941176470588236,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0.9862745098039216,0.9705882352941178,0.9549019607843139,0.93921568627451,0.9235294117647062,0.9078431372549018,0.892156862745098,0.8764705882352941,0.8607843137254902,0.8450980392156864,0.8294117647058825,0.8137254901960786,0.7980392156862743,0.7823529411764705,0.7666666666666666,0.7509803921568627,0.7352941176470589,0.719607843137255,0.7039215686274511,0.6882352941176473,0.6725490196078434,0.6568627450980391,0.6411764705882352,0.6254901960784314,0.6098039215686275,0.5941176470588236,0.5784313725490198,0.5627450980392159,0.5470588235294116,0.5313725490196077,0.5156862745098039,0.5}),
+  JET_g ({0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.001960784313725483,0.01764705882352935,0.03333333333333333,0.0490196078431373,0.06470588235294117,0.08039215686274503,0.09607843137254901,0.111764705882353,0.1274509803921569,0.1431372549019607,0.1588235294117647,0.1745098039215687,0.1901960784313725,0.2058823529411764,0.2215686274509804,0.2372549019607844,0.2529411764705882,0.2686274509803921,0.2843137254901961,0.3,0.3156862745098039,0.3313725490196078,0.3470588235294118,0.3627450980392157,0.3784313725490196,0.3941176470588235,0.4098039215686274,0.4254901960784314,0.4411764705882353,0.4568627450980391,0.4725490196078431,0.4882352941176471,0.503921568627451,0.5196078431372548,0.5352941176470587,0.5509803921568628,0.5666666666666667,0.5823529411764705,0.5980392156862746,0.6137254901960785,0.6294117647058823,0.6450980392156862,0.6607843137254901,0.6764705882352942,0.692156862745098,0.7078431372549019,0.723529411764706,0.7392156862745098,0.7549019607843137,0.7705882352941176,0.7862745098039214,0.8019607843137255,0.8176470588235294,0.8333333333333333,0.8490196078431373,0.8647058823529412,0.8803921568627451,0.8960784313725489,0.9117647058823528,0.9274509803921569,0.9431372549019608,0.9588235294117646,0.9745098039215687,0.9901960784313726,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0.9901960784313726,0.9745098039215687,0.9588235294117649,0.943137254901961,0.9274509803921571,0.9117647058823528,0.8960784313725489,0.8803921568627451,0.8647058823529412,0.8490196078431373,0.8333333333333335,0.8176470588235296,0.8019607843137253,0.7862745098039214,0.7705882352941176,0.7549019607843137,0.7392156862745098,0.723529411764706,0.7078431372549021,0.6921568627450982,0.6764705882352944,0.6607843137254901,0.6450980392156862,0.6294117647058823,0.6137254901960785,0.5980392156862746,0.5823529411764707,0.5666666666666669,0.5509803921568626,0.5352941176470587,0.5196078431372548,0.503921568627451,0.4882352941176471,0.4725490196078432,0.4568627450980394,0.4411764705882355,0.4254901960784316,0.4098039215686273,0.3941176470588235,0.3784313725490196,0.3627450980392157,0.3470588235294119,0.331372549019608,0.3156862745098041,0.2999999999999998,0.284313725490196,0.2686274509803921,0.2529411764705882,0.2372549019607844,0.2215686274509805,0.2058823529411766,0.1901960784313728,0.1745098039215689,0.1588235294117646,0.1431372549019607,0.1274509803921569,0.111764705882353,0.09607843137254912,0.08039215686274526,0.06470588235294139,0.04901960784313708,0.03333333333333321,0.01764705882352935,0.001960784313725483,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
+  JET_b ( {0.5,0.5156862745098039,0.5313725490196078,0.5470588235294118,0.5627450980392157,0.5784313725490196,0.5941176470588235,0.6098039215686275,0.6254901960784314,0.6411764705882352,0.6568627450980392,0.6725490196078432,0.6882352941176471,0.7039215686274509,0.7196078431372549,0.7352941176470589,0.7509803921568627,0.7666666666666666,0.7823529411764706,0.7980392156862746,0.8137254901960784,0.8294117647058823,0.8450980392156863,0.8607843137254902,0.8764705882352941,0.892156862745098,0.907843137254902,0.9235294117647059,0.9392156862745098,0.9549019607843137,0.9705882352941176,0.9862745098039216,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0.9941176470588236,0.9784313725490197,0.9627450980392158,0.9470588235294117,0.9313725490196079,0.915686274509804,0.8999999999999999,0.884313725490196,0.8686274509803922,0.8529411764705883,0.8372549019607844,0.8215686274509804,0.8058823529411765,0.7901960784313726,0.7745098039215685,0.7588235294117647,0.7431372549019608,0.7274509803921569,0.7117647058823531,0.696078431372549,0.6803921568627451,0.6647058823529413,0.6490196078431372,0.6333333333333333,0.6176470588235294,0.6019607843137256,0.5862745098039217,0.5705882352941176,0.5549019607843138,0.5392156862745099,0.5235294117647058,0.5078431372549019,0.4921568627450981,0.4764705882352942,0.4607843137254903,0.4450980392156865,0.4294117647058826,0.4137254901960783,0.3980392156862744,0.3823529411764706,0.3666666666666667,0.3509803921568628,0.335294117647059,0.3196078431372551,0.3039215686274508,0.2882352941176469,0.2725490196078431,0.2568627450980392,0.2411764705882353,0.2254901960784315,0.2098039215686276,0.1941176470588237,0.1784313725490199,0.1627450980392156,0.1470588235294117,0.1313725490196078,0.115686274509804,0.1000000000000001,0.08431372549019622,0.06862745098039236,0.05294117647058805,0.03725490196078418,0.02156862745098032,0.00588235294117645,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0})
+{
+
+  cout<<"inititalizing optSO3"<<endl;
+  spx_.reset(new MatrixXf(3,1));
+  (*spx_) << 1,0,0; // init just to get the dimensions right.
+  if(mode_.compare("dp") == 0)
+  {
+    //#ifndef WEIGHTED
+    //    optSO3_ = new OptSO3(25.0f*M_PI/180.0f,d_n,w,h);//,d_weights);
+    //#else
+    //    optSO3_ = new OptSO3(25.0f*M_PI/180.0f,d_n,w,h,d_weights);
+    //#endif
+    //    nCGIter_ = 10; // cannot do that many iterations
+    //    pddpvmf_ =  new DPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
+  }else if (mode_.compare("ddp") == 0){
+    //TODO
+    //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
+    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
+    //#ifndef WEIGHTED
+    //    optSO3_ = new OptSO3Approx(25.0f*M_PI/180.0f,d_n,w,h);//,d_weights);
+    //#else
+    //    optSO3_ = new OptSO3Approx(25.0f*M_PI/180.0f,d_n,w,h,d_weights);
+    //#endif
+    //    nCGIter_ = 25;
+  }
+}
+
 
 RealtimeDDPvMF::~RealtimeDDPvMF()
 {
-  if(!cuda_ready) return;
-
-  checkCudaErrors(cudaFree(d_depth));
-  checkCudaErrors(cudaFree(d_x));
-  checkCudaErrors(cudaFree(d_y));
-  checkCudaErrors(cudaFree(d_z));
-  checkCudaErrors(cudaFree(d_n));
-  checkCudaErrors(cudaFree(d_xyz));
-  checkCudaErrors(cudaFree(d_xu));
-  checkCudaErrors(cudaFree(d_yu));
-  checkCudaErrors(cudaFree(d_zu));
-  checkCudaErrors(cudaFree(d_xv));
-  checkCudaErrors(cudaFree(d_yv));
-  checkCudaErrors(cudaFree(d_zv));
-  checkCudaErrors(cudaFree(a));
-  checkCudaErrors(cudaFree(b));
-  checkCudaErrors(cudaFree(c));
-#ifdef WEIGHTED
-  checkCudaErrors(cudaFree(d_weights));
-#endif
-
-  free(h_n);
   delete pddpvmf_;
   fout_.close();
 }
 
 #define SMOOTH_DEPTH
 
-void RealtimeDDPvMF::extractNormals(const uint16_t *data, uint32_t w, uint32_t h)
-{
-  checkCudaErrors(cudaMemcpy(d_depth, data, w * h * sizeof(uint16_t),
-        cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaDeviceSynchronize());
-
-#ifdef SMOOTH_DEPTH
-  depth2smoothXYZ(invF_,w,h); 
-#else
-  depth2xyzGPU(d_depth,d_x,d_y,d_z,invF_,w,h,d_xyz); 
-#endif
-  // obtain derivatives using sobel 
-  computeDerivatives(w,h);
-#ifndef SMOOTH_DEPTH
-  // now smooth the derivatives
-  smoothDerivatives(2,w,w);
-#endif
-  // obtain the normals using mainly cross product on the derivatives
-//  derivatives2normalsGPU(
-  derivatives2normalsCleanerGPU(
-      d_x,d_y,d_z,
-      d_xu,d_yu,d_zu,
-      d_xv,d_yv,d_zv,
-      d_n,w,h);
-
-
-  checkCudaErrors(cudaMemcpy(h_n, d_n, w*h* X_STEP *sizeof(float), 
-        cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaDeviceSynchronize());
-};
-
 Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h) 
 {
-
-  prepareCUDA(w,h);
 
   Timer t0;
   tLog_.tic(-1); // reset all timers
 
-  extractNormals(data,w,h);
+  normalExtractor_.compute(data,w,h);
 
   tLog_.toc(0); 
 
+  cout<<"normals computed"<<endl;
+  n_cp_ = normalExtractor_.normals();
+
   uint32_t nNormals = 0;
-  for(uint32_t i=0; i<n_.width; i+=SUBSAMPLE_STEP)
-    for(uint32_t j=0; j<n_.height; j+=SUBSAMPLE_STEP)
-      if(n_.points[i+j*n_.width].x == n_.points[i+j*n_.width].x  )
+  for(uint32_t i=0; i<n_cp_->width; i+=SUBSAMPLE_STEP)
+    for(uint32_t j=0; j<n_cp_->height; j+=SUBSAMPLE_STEP)
+      if(n_cp_->points[i+j*n_cp_->width].x == n_cp_->points[i+j*n_cp_->width].x  )
         nNormals ++; // if not nan add one valid normal
   
   spx_.reset(new MatrixXf(3,nNormals));
   uint32_t k=0;
-  for(uint32_t i=0; i<n_.width; i+=SUBSAMPLE_STEP)
-    for(uint32_t j=0; j<n_.height; j+=SUBSAMPLE_STEP)
-      if(n_.points[i+j*n_.width].x == n_.points[i+j*n_.width].x )
+  for(uint32_t i=0; i<n_cp_->width; i+=SUBSAMPLE_STEP)
+    for(uint32_t j=0; j<n_cp_->height; j+=SUBSAMPLE_STEP)
+      if(n_cp_->points[i+j*n_cp_->width].x == n_cp_->points[i+j*n_cp_->width].x )
       {
-        (*spx_)(0,k) = n_.points[i+j*n_.width].x;
-        (*spx_)(1,k) = n_.points[i+j*n_.width].y;
-        (*spx_)(2,k) = n_.points[i+j*n_.width].z;
+        (*spx_)(0,k) = n_cp_->points[i+j*n_cp_->width].x;
+        (*spx_)(1,k) = n_cp_->points[i+j*n_cp_->width].y;
+        (*spx_)(2,k) = n_cp_->points[i+j*n_cp_->width].z;
         assert(fabs(spx_->col(k).norm()-1.0) <1e-3);
         ++k;
       }
@@ -116,12 +104,9 @@ Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h)
     z_ = pddpvmf_->z();
     K_ = pddpvmf_->getK();
     centroids_ = pddpvmf_->centroids();
-    nDisp_ = pcl::PointCloud<pcl::PointXYZRGB>(n_); // copy point cloud
+    nDisp_ = pcl::PointCloud<pcl::PointXYZRGB>(*n_cp_); // copy point cloud
     residual_ = residual;
 
-//    checkCudaErrors(cudaMemcpy(h_xyz, d_xyz, w*h*4 *sizeof(float), 
-//          cudaMemcpyDeviceToHost));
-//    checkCudaErrors(cudaDeviceSynchronize());
     // update viewer
     update = true;
     updateLock.unlock();
@@ -136,114 +121,9 @@ Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h)
 
   fout_<<K_<<" "<<residual_<<endl; fout_.flush();
 
-  return MatrixXf::Zero(3,3);
+  return MatrixXf::Identity(3,3);
 }
 
-
-void RealtimeDDPvMF::prepareCUDA(uint32_t w,uint32_t h)
-{
-  if (cuda_ready) return;
-  // CUDA preparations
-  printf("Allocating and initializing CUDA arrays...\n");
-  checkCudaErrors(cudaMalloc((void **)&d_depth, w * h * sizeof(uint16_t)));
-  checkCudaErrors(cudaMalloc((void **)&d_x, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_y, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_z, w * h * sizeof(float)));
-
-  checkCudaErrors(cudaMalloc((void **)&d_n, w * h * X_STEP* sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_xyz, w * h * 4* sizeof(float)));
-
-  checkCudaErrors(cudaMalloc((void **)&d_xu, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_yu, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_zu, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_xv, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_yv, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&d_zv, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&a, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&b, w * h * sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **)&c, w * h * sizeof(float)));
-#ifdef WEIGHTED
-  checkCudaErrors(cudaMalloc((void **)&d_weights, w * h * sizeof(float)));
-#else
-  d_weights = NULL;
-#endif
-  cout<<"cuda allocations done "<<d_n<<endl;
-
-  h_sobel_dif[0] = 1;
-  h_sobel_dif[1] = 0;
-  h_sobel_dif[2] = -1;
-
-  h_sobel_sum[0] = 1;
-  h_sobel_sum[1] = 2;
-  h_sobel_sum[2] = 1;
-
-  // sig =1.0
-  // x=np.arange(7) -3.0
-  // 1.0/(np.sqrt(2*np.pi)*sig)*np.exp(-0.5*(x*x/sig**2))
-  // 0.00443185,  0.05399097,  0.24197072,  0.39894228,  0.24197072,
-  // 0.05399097,  0.00443185
-  // sig = 2.0
-  // 0.0647588 ,  0.12098536,  0.17603266,  0.19947114,  0.17603266,
-  // 0.12098536,  0.0647588 
-  /*
-     h_kernel_avg[0] = 0.00443185;
-     h_kernel_avg[1] = 0.05399097;
-     h_kernel_avg[2] = 0.24197072;
-     h_kernel_avg[3] = 0.39894228;
-     h_kernel_avg[4] = 0.24197072;
-     h_kernel_avg[5] = 0.05399097;
-     h_kernel_avg[6] = 0.00443185;
-     */
-
-  h_kernel_avg[0] = 0.0647588;
-  h_kernel_avg[1] = 0.12098536;
-  h_kernel_avg[2] = 0.17603266;
-  h_kernel_avg[3] = 0.19947114;
-  h_kernel_avg[4] = 0.17603266;
-  h_kernel_avg[5] = 0.12098536;
-  h_kernel_avg[6] = 0.0647588;
-
-  n_ = pcl::PointCloud<pcl::PointXYZRGB>(w,h);
-  n_cp_ = pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr(&n_);
-  Map<MatrixXf, Aligned, OuterStride<> > nMat = 
-    n_.getMatrixXfMap(X_STEP,X_STEP,0);
-  h_n = nMat.data();//(float *)malloc(w *h *3* sizeof(float));
-
-  pc_ = pcl::PointCloud<pcl::PointXYZ>(w,h);
-  pc_cp_ = pcl::PointCloud<pcl::PointXYZ>::ConstPtr(&pc_);
-  Map<MatrixXf, Aligned, OuterStride<> > pcMat = 
-    pc_.getMatrixXfMap(X_STEP,X_STEP,0);
-  h_xyz = pcMat.data();//(float *)malloc(w *h *3* sizeof(float));
-
-  h_dbg = (float *)malloc(w *h * sizeof(float));
-
-
-  cout<<"inititalizing optSO3"<<endl;
-  spx_.reset(new MatrixXf(3,1));
-  (*spx_) << 1,0,0; // init just to get the dimensions right.
-  if(mode_.compare("dp") == 0)
-  {
-//#ifndef WEIGHTED
-//    optSO3_ = new OptSO3(25.0f*M_PI/180.0f,d_n,w,h);//,d_weights);
-//#else
-//    optSO3_ = new OptSO3(25.0f*M_PI/180.0f,d_n,w,h,d_weights);
-//#endif
-//    nCGIter_ = 10; // cannot do that many iterations
-//    pddpvmf_ =  new DPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-  }else if (mode_.compare("ddp") == 0){
-    //TODO
-//    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-//#ifndef WEIGHTED
-//    optSO3_ = new OptSO3Approx(25.0f*M_PI/180.0f,d_n,w,h);//,d_weights);
-//#else
-//    optSO3_ = new OptSO3Approx(25.0f*M_PI/180.0f,d_n,w,h,d_weights);
-//#endif
-//    nCGIter_ = 25;
-  }
-
-  cuda_ready = true;
-}
 
 void RealtimeDDPvMF::visualizePc()
 {
@@ -277,8 +157,8 @@ void RealtimeDDPvMF::visualizePc()
 //  viewer->addText ("normals", 10, 10, "v1 text", v1);
   viewer->addCoordinateSystem (1.0);
 
-  viewer->setPosition(0,0);
-  viewer->setSize(1000,1000);
+//  viewer->setPosition(0,0);
+//  viewer->setSize(1000,1000);
 
 //  int v2(0);
 //  viewer->createViewPort (0.5, 0.0, 1.0, 1.0, v2);
@@ -446,82 +326,37 @@ void RealtimeDDPvMF::visualizePc()
   }
 }
 
-void RealtimeDDPvMF::getAxisAssignments()
-{
-  
-}
 
-void RealtimeDDPvMF::computeDerivatives(uint32_t w,uint32_t h)
-{
-  setConvolutionKernel_small(h_sobel_dif);
-  convolutionRowsGPU_small(a,d_x,w,h);
-  convolutionRowsGPU_small(b,d_y,w,h);
-  convolutionRowsGPU_small(c,d_z,w,h);
-  setConvolutionKernel_small(h_sobel_sum);
-  convolutionColumnsGPU_small(d_xu,a,w,h);
-  convolutionColumnsGPU_small(d_yu,b,w,h);
-  convolutionColumnsGPU_small(d_zu,c,w,h);
-  convolutionRowsGPU_small(a,d_x,w,h);
-  convolutionRowsGPU_small(b,d_y,w,h);
-  convolutionRowsGPU_small(c,d_z,w,h);
-  setConvolutionKernel_small(h_sobel_dif);
-  convolutionColumnsGPU_small(d_xv,a,w,h);
-  convolutionColumnsGPU_small(d_yv,b,w,h);
-  convolutionColumnsGPU_small(d_zv,c,w,h);
-}
-
-void RealtimeDDPvMF::smoothDerivatives(uint32_t iterations, uint32_t w,uint32_t h)
-{
-  setConvolutionKernel(h_kernel_avg);
-  for(uint32_t i=0; i<iterations; ++i)
-  {
-    convolutionRowsGPU(a,d_xu,w,h);
-    convolutionRowsGPU(b,d_yu,w,h);
-    convolutionRowsGPU(c,d_zu,w,h);
-    convolutionColumnsGPU(d_xu,a,w,h);
-    convolutionColumnsGPU(d_yu,b,w,h);
-    convolutionColumnsGPU(d_zu,c,w,h);
-    convolutionRowsGPU(a,d_xv,w,h);
-    convolutionRowsGPU(b,d_yv,w,h);
-    convolutionRowsGPU(c,d_zv,w,h);
-    convolutionColumnsGPU(d_xv,a,w,h);
-    convolutionColumnsGPU(d_yv,b,w,h);
-    convolutionColumnsGPU(d_zv,c,w,h);
-  }
-}
-
-//#define BILATERAL
-void RealtimeDDPvMF::depth2smoothXYZ(float invF, uint32_t w,uint32_t h)
-{
-  cout<<"with "<<w<<" "<<h<<endl;
-  depth2floatGPU(d_depth,a,w,h);
-
+////#define BILATERAL
+//void RealtimeDDPvMF::depth2smoothXYZ(float invF, uint32_t w,uint32_t h)
+//{
+//  cout<<"with "<<w<<" "<<h<<endl;
+//  depth2floatGPU(d_depth,a,w,h);
+//
+////  for(uint32_t i=0; i<3; ++i)
+////  {
+////    depthFilterGPU(a,w,h);
+////  }
+//
+//  //TODO compare:
+//  // now smooth the derivatives
+//#ifdef BILATERAL
+//  cout<<"bilateral with "<<w<<" "<<h<<endl;
+//  bilateralFilterGPU(a,b,w,h,6,20.0,0.05);
+//  // convert depth into x,y,z coordinates
+//  depth2xyzFloatGPU(b,d_x,d_y,d_z,invF,w,h,d_xyz); 
+//#else
+//  setConvolutionKernel(h_kernel_avg);
 //  for(uint32_t i=0; i<3; ++i)
 //  {
-//    depthFilterGPU(a,w,h);
+//    convolutionRowsGPU(b,a,w,h);
+//    convolutionColumnsGPU(a,b,w,h);
 //  }
-
-  //TODO compare:
-  // now smooth the derivatives
-#ifdef BILATERAL
-  cout<<"bilateral with "<<w<<" "<<h<<endl;
-  bilateralFilterGPU(a,b,w,h,6,20.0,0.05);
-  // convert depth into x,y,z coordinates
-  depth2xyzFloatGPU(b,d_x,d_y,d_z,invF,w,h,d_xyz); 
-#else
-  setConvolutionKernel(h_kernel_avg);
-  for(uint32_t i=0; i<3; ++i)
-  {
-    convolutionRowsGPU(b,a,w,h);
-    convolutionColumnsGPU(a,b,w,h);
-  }
-  // convert depth into x,y,z coordinates
-  depth2xyzFloatGPU(a,d_x,d_y,d_z,invF,w,h,d_xyz); 
-#endif
-
-
-}
-
+//  // convert depth into x,y,z coordinates
+//  depth2xyzFloatGPU(a,d_x,d_y,d_z,invF,w,h,d_xyz); 
+//#endif
+//}
+//
 
 void RealtimeDDPvMF::run ()
 {
