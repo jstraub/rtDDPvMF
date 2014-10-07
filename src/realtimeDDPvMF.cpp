@@ -74,6 +74,8 @@ Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h)
 
   tLog_.toc(0); 
 
+  cout<<"w="<<w<<" " <<" h="<<h<<" "<<X_STEP<<endl;
+
   uint32_t nNormals = 0;
   for(uint32_t i=0; i<n_.width; i+=SUBSAMPLE_STEP)
     for(uint32_t j=0; j<n_.height; j+=SUBSAMPLE_STEP)
