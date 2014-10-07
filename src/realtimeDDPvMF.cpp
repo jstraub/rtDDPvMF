@@ -87,6 +87,7 @@ Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h)
   tLog_.tic(1);
 
   pddpvmf_->nextTimeStep(spx_);
+  cout<<"iterating now"<<endl;
   for(uint32_t i=0; i<nIter_; ++i)
   {
     cout<<" -- iteration = "<<i<<endl;
