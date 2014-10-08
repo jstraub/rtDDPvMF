@@ -45,6 +45,13 @@ extern void bilateralFilterGPU(float *in, float* out, int w, int h,
 
 using namespace Eigen;
 
+//#define RM_NANS_FROM_DEPTH
+// normals without nans
+//TimerLog: stats over timer cycles (mean +- 3*std):  3.99052+- 6.63986 16.312+- 10.869 43.0436+- 19.7957
+// full depth image with nans
+//TimerLog: stats over timer cycles (mean +- 3*std):  4.58002+- 9.72736 19.0138+- 17.9823 49.9746+- 30.6944
+
+
 class RealtimeDDPvMF
 {
   public:

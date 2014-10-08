@@ -2,7 +2,7 @@
 
 RealtimeDDPvMF::RealtimeDDPvMF(std::string mode) 
   :  tLog_("./timer.log",3,"TimerLog"),
-  residual_(0.0), nIter_(4), 
+  residual_(0.0), nIter_(3), 
   nFrame_(0), resultsPath_("../results/"),
   normalExtractor_(570.f),
   fout_("./stats.log",ofstream::out),
@@ -49,6 +49,7 @@ Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h)
   cout<<"normals computed"<<endl;
   n_cp_ = normalExtractor_.normals();
 
+#ifdef RM_NANS_FROM_DEPTH
   uint32_t nNormals = 0;
   for(uint32_t i=0; i<n_cp_->width; i+=SUBSAMPLE_STEP)
     for(uint32_t j=0; j<n_cp_->height; j+=SUBSAMPLE_STEP)
@@ -70,10 +71,29 @@ Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h)
 
   cout<<"# valid Normals: "<< nNormals<<endl;
   cout<<"# valid Normals: "<< spx_->rows()<<" x "<<spx_->cols()<<endl;
+  pddpvmf_->nextTimeStep(spx_);
+
+#else
+
+  for(uint32_t i=150; i<160; i+=SUBSAMPLE_STEP)
+    for(uint32_t j=150; j<160; j+=SUBSAMPLE_STEP)
+    {
+
+        cout<< n_cp_->points[i+j*n_cp_->width].x<<"\t"
+          << n_cp_->points[i+j*n_cp_->width].y 
+          <<"\t"<< n_cp_->points[i+j*n_cp_->width].z<<endl;
+    }
+  uint32_t nNormals = 0;
+  for(uint32_t i=0; i<n_cp_->width; i+=SUBSAMPLE_STEP)
+    for(uint32_t j=0; j<n_cp_->height; j+=SUBSAMPLE_STEP)
+      if(n_cp_->points[i+j*n_cp_->width].x != n_cp_->points[i+j*n_cp_->width].x  )
+        nNormals ++; // if not nan add one valid normal
+  cout<<"#nans = "<<nNormals<<endl;
+  pddpvmf_->nextTimeStep(normalExtractor_.d_normals(),w*h,
+      normalExtractor_.d_step(), normalExtractor_.d_offset());
+#endif
 
   tLog_.tic(1);
-
-  pddpvmf_->nextTimeStep(spx_);
   cout<<"iterating now"<<endl;
   for(uint32_t i=0; i<nIter_; ++i)
   {
@@ -213,13 +233,19 @@ void RealtimeDDPvMF::visualizePc()
 
       uint32_t Kmax = 4;
       uint32_t k=0;
+      cout<<" z shape "<<z_.rows()<<" "<< nDisp_.width<<" " <<nDisp_.height<<endl;
 //      cv::Mat Iz(nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC1); 
       zIrgb = cv::Mat(nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
       for(uint32_t i=0; i<nDisp_.width; i+=SUBSAMPLE_STEP)
         for(uint32_t j=0; j<nDisp_.height; j+=SUBSAMPLE_STEP)
           if(nDisp_.points[i+j*nDisp_.width].x == nDisp_.points[i+j*nDisp_.width].x )
           {
+#ifdef RM_NANS_FROM_DEPTH
             uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+#else
+            uint8_t idz = (static_cast<uint8_t>(z_(nDisp_.width*j +i)))*255/Kmax;
+#endif
+//            cout<<"k "<<k<<" "<< z_.rows() <<"\t"<<z_(k)<<"\t"<<int32_t(idz)<<endl;
             zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[0] = JET_b[idz]*255;    
             zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[1] = JET_g[idz]*255;    
             zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = JET_r[idz]*255;    
@@ -242,7 +268,12 @@ void RealtimeDDPvMF::visualizePc()
           for(uint32_t j=0; j<nDisp_.height; j+=SUBSAMPLE_STEP)
             if(nDisp_.points[i+j*nDisp_.width].x == nDisp_.points[i+j*nDisp_.width].x )
             {
-              uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+//              k = nDisp_.width*j +i;
+#ifdef RM_NANS_FROM_DEPTH
+            uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+#else
+            uint8_t idz = (static_cast<uint8_t>(z_(nDisp_.width*j +i)))*255/Kmax;
+#endif
               n->points[k] = nDisp_.points[i+j*nDisp_.width];
               n->points[k].r = JET_r[idz]*255;
               n->points[k].g = JET_g[idz]*255;
