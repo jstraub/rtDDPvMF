@@ -38,12 +38,9 @@ RealtimeDDPvMF::~RealtimeDDPvMF()
 
 Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h) 
 {
-
   Timer t0;
   tLog_.tic(-1); // reset all timers
-
   normalExtractor_.compute(data,w,h);
-
   tLog_.toc(0); 
   n_cp_ = normalExtractor_.normals();
 
