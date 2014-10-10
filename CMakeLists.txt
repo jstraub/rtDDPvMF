@@ -61,8 +61,6 @@ include_directories(
   include
   ./build/dpMM/include
   ./build/cudaPcl/include
-#  ../rtDDPvMF-build/rtmf/include
-#  ../rtDDPvMF-build/dpMM/include
   ${EIGEN3_INCLUDE_DIR}                                       
   /usr/include                                        
   #$ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1.bak/
@@ -72,21 +70,14 @@ include_directories(
   /usr/include/ni
   #  /usr/include/vtk-5.8/
   ${Boost_INCLUDE_DIRS}
-  # $ENV{WORKSPACE_HOME}/research/dpMM/include
-  #$ENV{WORKSPACE_HOME}/research/rtmf/include
-  #$ENV{WORKSPACE_HOME}/research/rtmf/common/inc
 )                                                                               
                                                                                 
 link_directories(
   $ENV{WORKSPACE_HOME}/3rdparty/lib/vtk-5.8/
   ${Boost_LIBRARY_DIRS}
   $ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1/build
-  #  $ENV{WORKSPACE_HOME}/research/dpMM/build/
-  #$ENV{WORKSPACE_HOME}/research/rtmf/build
   ./build/dpMM/lib/
   ./build/cudaPcl/lib/
-#  ../rtDDPvMF-build/dpMM/lib/
-#  ../rtDDPvMF-build/rtmf/lib/
 )
 
 cuda_add_executable(realtimeDDPvMF_openni

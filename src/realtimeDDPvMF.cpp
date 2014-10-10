@@ -4,7 +4,7 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode)
   :  tLog_("./timer.log",3,"TimerLog"),
   residual_(0.0), nIter_(3), 
   nFrame_(0), resultsPath_("../results/"),
-  normalExtractor_(570.f),
+  normalExtractor_(570.f,640,480),
   fout_("./stats.log",ofstream::out),
   update(false), updateRGB_(false), 
   mode_(mode), 
@@ -38,7 +38,6 @@ RealtimeDDPvMF::~RealtimeDDPvMF()
 
 Matrix3f RealtimeDDPvMF::depth_cb(const uint16_t *data, int w, int h) 
 {
-  Timer t0;
   tLog_.tic(-1); // reset all timers
   normalExtractor_.compute(data,w,h);
   tLog_.toc(0); 
