@@ -82,7 +82,8 @@ link_directories(
 
 cuda_add_executable(realtimeDDPvMF_openni
   ./src/realtimeDDPvMF_openni.cpp
-  ./src/realtimeDDPvMF.cpp
+#  ./src/rtDDPvMF.cpp
+#  ./src/realtimeDDPvMF.cpp
   )
 
 target_link_libraries (realtimeDDPvMF_openni
@@ -91,7 +92,7 @@ target_link_libraries (realtimeDDPvMF_openni
   pcl_common pcl_io pcl_visualization pcl_filters
   OpenNI XnVNite_1_5_2
   vtkCommon vtkFiltering vtkRendering vtkGraphics
-  opencv_core opencv_highgui opencv_contrib)
+  opencv_core opencv_highgui opencv_contrib opencv_imgproc)
 
 ADD_DEPENDENCIES(realtimeDDPvMF_openni dpMM libCudaPcl)
 

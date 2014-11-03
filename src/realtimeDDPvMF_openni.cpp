@@ -1,7 +1,8 @@
 
 #include <iostream>
 #include <string>
-#include <realtimeDDPvMF_openni.hpp>
+//#include <realtimeDDPvMF_openni.hpp>
+#include <rtDDPvMF.hpp>
 
 // Utilities and system includes
 //#include <helper_functions.h>
@@ -35,7 +36,7 @@ int main (int argc, char** argv)
 
   findCudaDevice(argc,(const char**)argv);
 
-  RealtimeDDPvMF_openni v(mode);
+  RealtimeDDPvMF v(mode);
   v.run ();
   cout<<cudaDeviceReset()<<endl;
   return (0);
