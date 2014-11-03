@@ -205,14 +205,14 @@ void RealtimeDDPvMF::visualizePc()
 //        viewer->addText(ss.str(),10,20, "residual", v1);
 
 
-      cv::Mat nI(n_cp_->height,n_cp_->width,CV_32FC3); 
-      for(uint32_t i=0; i<n_cp_->width; ++i)
-        for(uint32_t j=0; j<n_cp_->height; ++j)
+      cv::Mat nI(nDisp_.height,nDisp_.width,CV_32FC3); 
+      for(uint32_t i=0; i<nDisp_.width; ++i)
+        for(uint32_t j=0; j<nDisp_.height; ++j)
         {
           // nI is BGR but I want R=x G=y and B=z
-          nI.at<cv::Vec3f>(j,i)[0] = (1.0f+n_cp_->points[i+j*n_cp_->width].z)*0.5f; // to match pc
-          nI.at<cv::Vec3f>(j,i)[1] = (1.0f+n_cp_->points[i+j*n_cp_->width].y)*0.5f; 
-          nI.at<cv::Vec3f>(j,i)[2] = (1.0f+n_cp_->points[i+j*n_cp_->width].x)*0.5f; 
+          nI.at<cv::Vec3f>(j,i)[0] = (1.0f+nDisp_.points[i+j*nDisp_.width].z)*0.5f; // to match pc
+          nI.at<cv::Vec3f>(j,i)[1] = (1.0f+nDisp_.points[i+j*nDisp_.width].y)*0.5f; 
+          nI.at<cv::Vec3f>(j,i)[2] = (1.0f+nDisp_.points[i+j*nDisp_.width].x)*0.5f; 
         }
       cv::imshow("normals",nI); 
 
