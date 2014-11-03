@@ -62,6 +62,9 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     double residual_;
     uint32_t nIter_;
 
+    void visualizePc();
+
+
   protected:
     static const uint32_t SUBSAMPLE_STEP = 1;
 
@@ -87,7 +90,7 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     float JET_g_[256];
     float JET_b_[256];
 };
-
+// ---------------------------------- impl -----------------------------------
 
 
 RealtimeDDPvMF::RealtimeDDPvMF(std::string mode) 
@@ -121,9 +124,9 @@ RealtimeDDPvMF::~RealtimeDDPvMF()
 
 void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h) 
 {
-//  tLog_.tic(-1); // reset all timers
+  tLog_.tic(-1); // reset all timers
 //  normalExtractor_.compute(data,w,h);
-//  tLog_.toc(0); 
+  tLog_.toc(0); 
 //  n_cp_ = normalExtractor_.normals();
 
 #ifdef RM_NANS_FROM_DEPTH
@@ -194,6 +197,48 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h)
   fout_<<K_<<" "<<residual_<<endl; fout_.flush();
 }
 
+void RealtimeDDPvMF::visualizePc()                                      
+{                                                                               
+  //copy again                                                                  
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr nDisp(                                 
+      new pcl::PointCloud<pcl::PointXYZRGB>(*nDisp_));                          
+  cv::Mat nI(nDisp->height,nDisp->width,CV_32FC3);                              
+  for(uint32_t i=0; i<nDisp->width; ++i)                                        
+    for(uint32_t j=0; j<nDisp->height; ++j)                                     
+    {                                                                           
+      // nI is BGR but I want R=x G=y and B=z                                   
+      nI.at<cv::Vec3f>(j,i)[0] = (1.0f+nDisp->points[i+j*nDisp->width].z)*0.5f; // to match pc
+      nI.at<cv::Vec3f>(j,i)[1] = (1.0f+nDisp->points[i+j*nDisp->width].y)*0.5f; 
+      nI.at<cv::Vec3f>(j,i)[2] = (1.0f+nDisp->points[i+j*nDisp->width].x)*0.5f; 
+      nDisp->points[i+j*nDisp->width].rgb=0;                                    
+    }                                                                           
+  cv::imshow("normals",nI);                                                     
+  this->pc_ = nDisp;                                                            
+//  this->pc_ = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(nDisp);                  
+
+  uint32_t k=0, Kmax=10;
+  for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
+    for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
+      if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
+      {
+        //              k = nDisp->width*j +i;
+#ifdef RM_NANS_FROM_DEPTH
+        uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+#else
+        uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
+#endif
+//        n->points[k] = nDisp->points[i+j*nDisp->width];
+        nDisp->points[k].r = JET_r_[idz]*255;
+        nDisp->points[k].g = JET_g_[idz]*255;
+        nDisp->points[k].b = JET_b_[idz]*255;
+        //              n->push_back(pcl::PointXYZL());
+        //              nDisp->points[i].x,nDisp->points[i].y,nDisp->points[i].z,z_(k)));
+        k++;
+      };
+                                                                                
+  if(!this->viewer_->updatePointCloud(pc_, "pc"))                               
+    this->viewer_->addPointCloud(pc_, "pc");                                    
+}
 
 void RealtimeDDPvMF::fillJET()
 {
