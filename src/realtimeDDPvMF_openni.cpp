@@ -36,7 +36,7 @@ int main (int argc, char** argv)
 
   findCudaDevice(argc,(const char**)argv);
 
-  RealtimeDDPvMF v(mode);
+  RealtimeDDPvMF v(mode,540.,0.2*0.2,10);
   v.run ();
   cout<<cudaDeviceReset()<<endl;
   return (0);

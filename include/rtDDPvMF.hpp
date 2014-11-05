@@ -49,11 +49,15 @@ using namespace Eigen;
 // full depth image with nans
 //TimerLog: stats over timer cycles (mean +- 3*std):  4.58002+- 9.72736 19.0138+- 17.9823 49.9746+- 30.6944
 
+struct CfgRtDDPvMF
+{
+
+};
 
 class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 {
   public:
-    RealtimeDDPvMF(std::string mode);
+    RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B);
     ~RealtimeDDPvMF();
 
     virtual void normals_cb(float* d_normals, uint32_t w, uint32_t h);
@@ -69,15 +73,14 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     static const uint32_t SUBSAMPLE_STEP = 1;
 
     string resultsPath_;
-    float invF_;
     ofstream fout_;
     std::string mode_;
 
     uint32_t K_;
     VectorXu z_;
     MatrixXf centroids_;
-    cv::Mat rgb_;
-    cv::Mat Iz_;
+    cv::Mat zIrgb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
+    cv::Mat Icomb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
 
     boost::shared_ptr<MatrixXf> spx_; // normals
     float lambda_, beta_, Q_;
@@ -93,8 +96,9 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 // ---------------------------------- impl -----------------------------------
 
 
-RealtimeDDPvMF::RealtimeDDPvMF(std::string mode) 
-  :  tLog_("./timer.log",3,"TimerLog"),
+RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B) 
+  : OpenniSmoothNormalsGpu(f_d, eps, B),
+    tLog_("./timer.log",3,"TimerLog"),
   residual_(0.0), nIter_(3), 
   resultsPath_("../results/"),
   fout_("./stats.log",ofstream::out),
@@ -213,29 +217,76 @@ void RealtimeDDPvMF::visualizePc()
       nDisp->points[i+j*nDisp->width].rgb=0;                                    
     }                                                                           
   cv::imshow("normals",nI);                                                     
-  this->pc_ = nDisp;                                                            
 //  this->pc_ = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(nDisp);                  
 
-  uint32_t k=0, Kmax=10;
-  for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
-    for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
-      if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
-      {
-        //              k = nDisp->width*j +i;
+//  cout<<z_.rows()<<" "<<z_.cols()<<endl; 
+//  cout<<z_.transpose()<<endl;
+//
+
+      uint32_t Kmax = 10;
+      uint32_t k=0;
+      cout<<" z shape "<<z_.rows()<<" "<< nDisp->width<<" " <<nDisp->height<<endl;
+//      cv::Mat Iz(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC1); 
+      zIrgb = cv::Mat(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC3);
+      for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
+        for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
+          if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
+          {
 #ifdef RM_NANS_FROM_DEPTH
-        uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+            uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
 #else
-        uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
+            uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
 #endif
-//        n->points[k] = nDisp->points[i+j*nDisp->width];
-        nDisp->points[k].r = JET_r_[idz]*255;
-        nDisp->points[k].g = JET_g_[idz]*255;
-        nDisp->points[k].b = JET_b_[idz]*255;
-        //              n->push_back(pcl::PointXYZL());
-        //              nDisp->points[i].x,nDisp->points[i].y,nDisp->points[i].z,z_(k)));
-        k++;
-      };
-                                                                                
+//            cout<<"k "<<k<<" "<< z_.rows() <<"\t"<<z_(k)<<"\t"<<int32_t(idz)<<endl;
+            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[0] = JET_b_[idz]*255;    
+            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[1] = JET_g_[idz]*255;    
+            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = JET_r_[idz]*255;    
+            k++;
+          }else{
+            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[0] = 255;
+            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[1] = 255;    
+            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = 255;    
+          }
+
+      cout<<this->rgb_.rows <<" " << this->rgb_.cols<<endl;
+      if(this->rgb_.rows>1 && this->rgb_.cols >1)
+      {
+        cv::addWeighted(this->rgb_ , 0.7, zIrgb, 0.3, 0.0, Icomb);
+        cv::imshow("dbg",Icomb); 
+      }else{
+        cv::imshow("dbg",zIrgb); 
+      }
+
+////  uint32_t k=0, Kmax=10;
+//  for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
+//    for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
+////      if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
+//      if(z_(nDisp->width*j +i) <= Kmax)
+//      {
+////        if(z_(k) == 4294967295)
+////        if(z_(i+j*nDisp->width) == 4294967295)
+////          cout<<" Problem"<<endl;
+//       
+////                     k = nDisp->width*j +i;
+//#ifdef RM_NANS_FROM_DEPTH
+//        uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+//#else
+//        uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
+////        cout << z_(nDisp->width*j +i)<<endl;
+//#endif
+////        if(z_(nDisp->width*j +i)>0)
+////        cout<<z_(nDisp->width*j +i)<< " " <<int(idz)<<endl;
+////        n->points[k] = nDisp->points[i+j*nDisp->width];
+//        nDisp->points[k].r = JET_r_[idz]*255;
+//        nDisp->points[k].g = JET_g_[idz]*255;
+//        nDisp->points[k].b = JET_b_[idz]*255;
+//        //              n->push_back(pcl::PointXYZL());
+//        //              nDisp->points[i].x,nDisp->points[i].y,nDisp->points[i].z,z_(k)));
+//        k++;
+//      };
+//                                                                                
+//  this->pc_ = nDisp;                                                            
+
   if(!this->viewer_->updatePointCloud(pc_, "pc"))                               
     this->viewer_->addPointCloud(pc_, "pc");                                    
 }
