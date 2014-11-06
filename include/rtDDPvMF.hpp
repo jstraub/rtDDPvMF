@@ -81,6 +81,7 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     MatrixXf centroids_;
     cv::Mat zIrgb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
     cv::Mat Icomb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroidsPc_;
 
     boost::shared_ptr<MatrixXf> spx_; // normals
     float lambda_, beta_, Q_;
@@ -99,11 +100,11 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B) 
   : OpenniSmoothNormalsGpu(f_d, eps, B),
     tLog_("./timer.log",3,"TimerLog"),
-  residual_(0.0), nIter_(3), 
+  residual_(0.0), nIter_(10), 
   resultsPath_("../results/"),
   fout_("./stats.log",ofstream::out),
   mode_(mode), 
-  lambda_(cos(93.0*M_PI/180.0)-1.), beta_(3.e5), Q_(-1.e3),
+  lambda_(cos(93.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
   rndGen_(91)
 {
   fillJET();
@@ -164,7 +165,7 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h)
 //      if(n_cp_->points[i+j*n_cp_->width].x != n_cp_->points[i+j*n_cp_->width].x  )
 //        nNormals ++; // if not nan add one valid normal
 //  cout<<"#nans = "<<nNormals<<endl;
-  pddpvmf_->nextTimeStep(d_normals,w*h,8,0);
+  pddpvmf_->nextTimeStep(d_normals,w*h,3,0);
 #endif
 
   tLog_.tic(1);
@@ -201,94 +202,133 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h)
   fout_<<K_<<" "<<residual_<<endl; fout_.flush();
 }
 
-void RealtimeDDPvMF::visualizePc()                                      
+void RealtimeDDPvMF::visualizePc()
 {                                                                               
   //copy again                                                                  
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr nDisp(                                 
       new pcl::PointCloud<pcl::PointXYZRGB>(*nDisp_));                          
-  cv::Mat nI(nDisp->height,nDisp->width,CV_32FC3);                              
-  for(uint32_t i=0; i<nDisp->width; ++i)                                        
-    for(uint32_t j=0; j<nDisp->height; ++j)                                     
-    {                                                                           
-      // nI is BGR but I want R=x G=y and B=z                                   
-      nI.at<cv::Vec3f>(j,i)[0] = (1.0f+nDisp->points[i+j*nDisp->width].z)*0.5f; // to match pc
-      nI.at<cv::Vec3f>(j,i)[1] = (1.0f+nDisp->points[i+j*nDisp->width].y)*0.5f; 
-      nI.at<cv::Vec3f>(j,i)[2] = (1.0f+nDisp->points[i+j*nDisp->width].x)*0.5f; 
-      nDisp->points[i+j*nDisp->width].rgb=0;                                    
-    }                                                                           
-  cv::imshow("normals",nI);                                                     
+//  cv::Mat nI(nDisp->height,nDisp->width,CV_32FC3);                              
+//  for(uint32_t i=0; i<nDisp->width; ++i)                                        
+//    for(uint32_t j=0; j<nDisp->height; ++j)                                     
+//    {                                                                           
+//      // nI is BGR but I want R=x G=y and B=z                                   
+//      nI.at<cv::Vec3f>(j,i)[0] = (1.0f+nDisp->points[i+j*nDisp->width].z)*0.5f; // to match pc
+//      nI.at<cv::Vec3f>(j,i)[1] = (1.0f+nDisp->points[i+j*nDisp->width].y)*0.5f; 
+//      nI.at<cv::Vec3f>(j,i)[2] = (1.0f+nDisp->points[i+j*nDisp->width].x)*0.5f; 
+//      nDisp->points[i+j*nDisp->width].rgb=0;                                    
+//    }                                                                           
+//  cv::imshow("normals",nI);                                                     
+  cv::Mat nI(this->normalsImg_.rows,this->normalsImg_.cols,CV_8UC3);                              
+  cv::Mat nIRGB(this->normalsImg_.rows,this->normalsImg_.cols,CV_8UC3);                              
+  this->normalsImg_.convertTo(nI,CV_8UC3,127.5f,127.5f);
+  cv::cvtColor(nI,nIRGB,CV_RGB2BGR);
+  cv::imshow("normals",nIRGB);             
+//  cv::imshow("normals",this->normalsImg_);                                                     
 //  this->pc_ = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(nDisp);                  
 
 //  cout<<z_.rows()<<" "<<z_.cols()<<endl; 
 //  cout<<z_.transpose()<<endl;
 //
 
-      uint32_t Kmax = 10;
-      uint32_t k=0;
-      cout<<" z shape "<<z_.rows()<<" "<< nDisp->width<<" " <<nDisp->height<<endl;
-//      cv::Mat Iz(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC1); 
-      zIrgb = cv::Mat(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC3);
-      for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
-        for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
-          if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
-          {
-#ifdef RM_NANS_FROM_DEPTH
-            uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
-#else
-            uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
-#endif
-//            cout<<"k "<<k<<" "<< z_.rows() <<"\t"<<z_(k)<<"\t"<<int32_t(idz)<<endl;
-            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[0] = JET_b_[idz]*255;    
-            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[1] = JET_g_[idz]*255;    
-            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = JET_r_[idz]*255;    
-            k++;
-          }else{
-            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[0] = 255;
-            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[1] = 255;    
-            zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = 255;    
-          }
-
-      cout<<this->rgb_.rows <<" " << this->rgb_.cols<<endl;
-      if(this->rgb_.rows>1 && this->rgb_.cols >1)
+  uint32_t Kmax = 5;
+  uint32_t k=0;
+  cout<<" z shape "<<z_.rows()<<" "<< nDisp->width<<" " <<nDisp->height<<endl;
+//  cv::Mat Iz(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC1); 
+  zIrgb = cv::Mat(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC3);
+  for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
+    for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
+      if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
       {
-        cv::addWeighted(this->rgb_ , 0.7, zIrgb, 0.3, 0.0, Icomb);
-        cv::imshow("dbg",Icomb); 
+#ifdef RM_NANS_FROM_DEPTH
+        uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+#else
+        uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
+#endif
+        //            cout<<"k "<<k<<" "<< z_.rows() <<"\t"<<z_(k)<<"\t"<<int32_t(idz)<<endl;
+        zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[0] = JET_b_[idz]*255;    
+        zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[1] = JET_g_[idz]*255;    
+        zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = JET_r_[idz]*255;    
+        k++;
       }else{
-        cv::imshow("dbg",zIrgb); 
+        zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[0] = 255;
+        zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[1] = 255;    
+        zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = 255;    
       }
 
-////  uint32_t k=0, Kmax=10;
-//  for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
-//    for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
-////      if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
-//      if(z_(nDisp->width*j +i) <= Kmax)
-//      {
-////        if(z_(k) == 4294967295)
-////        if(z_(i+j*nDisp->width) == 4294967295)
-////          cout<<" Problem"<<endl;
-//       
-////                     k = nDisp->width*j +i;
-//#ifdef RM_NANS_FROM_DEPTH
-//        uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
-//#else
-//        uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
-////        cout << z_(nDisp->width*j +i)<<endl;
-//#endif
-////        if(z_(nDisp->width*j +i)>0)
-////        cout<<z_(nDisp->width*j +i)<< " " <<int(idz)<<endl;
-////        n->points[k] = nDisp->points[i+j*nDisp->width];
-//        nDisp->points[k].r = JET_r_[idz]*255;
-//        nDisp->points[k].g = JET_g_[idz]*255;
-//        nDisp->points[k].b = JET_b_[idz]*255;
-//        //              n->push_back(pcl::PointXYZL());
-//        //              nDisp->points[i].x,nDisp->points[i].y,nDisp->points[i].z,z_(k)));
-//        k++;
-//      };
-//                                                                                
-//  this->pc_ = nDisp;                                                            
+  cout<<this->rgb_.rows <<" " << this->rgb_.cols<<endl;
+  if(this->rgb_.rows>1 && this->rgb_.cols >1)
+  {
+    cv::addWeighted(this->rgb_ , 0.7, zIrgb, 0.3, 0.0, Icomb);
+    cv::imshow("dbg",Icomb); 
+  }else{
+    cv::imshow("dbg",zIrgb); 
+  }
 
+////  uint32_t k=0, Kmax=10;
+  for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
+    for(uint32_t j=0; j<nDisp->height; j+=SUBSAMPLE_STEP)
+//      if(nDisp->points[i+j*nDisp->width].x == nDisp->points[i+j*nDisp->width].x )
+      if(z_(nDisp->width*j +i) <= Kmax )
+      {
+//        if(z_(k) == 4294967295)
+//        if(z_(i+j*nDisp->width) == 4294967295)
+//          cout<<" Problem"<<endl;
+       
+//         k = nDisp->width*j +i;
+#ifdef RM_NANS_FROM_DEPTH
+        uint8_t idz = (static_cast<uint8_t>(z_(k)))*255/Kmax;
+#else
+        uint8_t idz = (static_cast<uint8_t>(z_(nDisp->width*j +i)))*255/Kmax;
+//        cout << z_(nDisp->width*j +i)<<endl;
+#endif
+//        if(z_(nDisp->width*j +i)>0)
+//        cout<<z_(nDisp->width*j +i)<< " " <<int(idz)<<endl;
+//        n->points[k] = nDisp->points[i+j*nDisp->width];
+        nDisp->points[nDisp->width*j +i].r = static_cast<uint8_t>(floor(JET_r_[idz]*255));
+        nDisp->points[nDisp->width*j +i].g = static_cast<uint8_t>(floor(JET_g_[idz]*255));
+        nDisp->points[nDisp->width*j +i].b = static_cast<uint8_t>(floor(JET_b_[idz]*255));
+        //              n->push_back(pcl::PointXYZL());
+        //              nDisp->points[i].x,nDisp->points[i].y,nDisp->points[i].z,z_(k)));
+        k++;
+      }else{
+        nDisp->points[nDisp->width*j +i].x = 0.0;
+        nDisp->points[nDisp->width*j +i].y = 0.0;
+        nDisp->points[nDisp->width*j +i].z = 0.0;
+        nDisp->points[nDisp->width*j +i].r = 255;
+        nDisp->points[nDisp->width*j +i].g = 255;
+        nDisp->points[nDisp->width*j +i].b = 255;
+      }
+                                                                                
+  this->pc_ = nDisp;                                                            
   if(!this->viewer_->updatePointCloud(pc_, "pc"))                               
     this->viewer_->addPointCloud(pc_, "pc");                                    
+
+//  centPc = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(
+//      new pcl::PointCloud<pcl::PointXYZRGB>(K_,1));
+//  this->viewer_->removeAllShapes();
+  for(uint32_t k=0; k<Kmax; ++k)
+  {
+    char name[20];
+    sprintf(name,"cent%d",k);
+    this->viewer_->removeShape(std::string(name));
+  }
+  for(uint32_t k=0; k<K_; ++k)
+  {
+    uint8_t idz = (static_cast<uint8_t>(k))*255/Kmax;
+    pcl::PointXYZ pt;
+    pt.x = centroids_(0,k)*1.2;
+    pt.y = centroids_(1,k)*1.2;
+    pt.z = centroids_(2,k)*1.2;
+    double r = JET_r_[idz];
+    double g = JET_g_[idz];
+    double b = JET_b_[idz];
+    char name[20];
+    sprintf(name,"cent%d",k);
+    if(!this->viewer_->updateSphere(pt,0.1,r,g,b, std::string(name)))
+      this->viewer_->addSphere(pt,0.1,r,g,b, std::string(name));
+  }
+//  centroidsPc_ = centPc;
+
 }
 
 void RealtimeDDPvMF::fillJET()
