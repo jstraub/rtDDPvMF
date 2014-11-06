@@ -40,6 +40,7 @@
 #include <ddpvMFmeansCUDA.hpp>
 
 #include <openniSmoothNormalsGpu.hpp>
+#include <SO3.hpp>
 
 using namespace Eigen;
 
@@ -79,6 +80,8 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     uint32_t K_;
     VectorXu z_;
     MatrixXf centroids_;
+    MatrixXf prevCentroids_;
+    MatrixXf muR_;
     cv::Mat zIrgb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
     cv::Mat Icomb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroidsPc_;
@@ -119,6 +122,8 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
     //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
     pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
   }
+  centroids_ = MatrixXf::Zero(3,1); centroids_ << 1.,0,0;
+  prevCentroids_ = MatrixXf::Zero(3,1); prevCentroids_ << 1.,0,0;
 }
 
 RealtimeDDPvMF::~RealtimeDDPvMF()
@@ -182,15 +187,24 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h)
   tLog_.toc(1);
   pddpvmf_->getZfromGpu();
 
+  std::vector<MatrixXf> Rs(centroids_.cols());
+  for(uint32_t k=0; k<centroids_.cols(); ++k)
+  {
+    Rs[k] = rotationFromAtoB<float>(centroids_.col(k),prevCentroids_.col(k));
+//    cout<<"k="<<k<<endl<<Rs[k]<<endl;
+  }
+
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);
     z_ = pddpvmf_->z();
     K_ = pddpvmf_->getK();
+    prevCentroids_  = centroids_;
     centroids_ = pddpvmf_->centroids();
     residual_ = residual;
-    // update viewer
-//    this->update_ = true;
+    muR_ = SO3<float>::meanRotation(Rs,pddpvmf_->counts().cast<float>(),20);
+//  cout <<"muR"<<endl<<muR_<<endl;
   }
+
 
   tLog_.toc(2); // total time
   tLog_.logCycle();
@@ -302,6 +316,10 @@ void RealtimeDDPvMF::visualizePc()
   this->pc_ = nDisp;                                                            
   if(!this->viewer_->updatePointCloud(pc_, "pc"))                               
     this->viewer_->addPointCloud(pc_, "pc");                                    
+
+  Affine3f cosy = muR_;
+  if(!this->viewer_->updateCoordinateSystem(1.0,cosy,"R"))
+    this->viewer_->addCoordinateSystemPose("R",cosy);
 
 //  centPc = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(
 //      new pcl::PointCloud<pcl::PointXYZRGB>(K_,1));
