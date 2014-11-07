@@ -55,6 +55,8 @@ struct CfgRtDDPvMF
 
 };
 
+void rotatePcGPU(float* d_pc, float* d_R, int32_t N, int32_t step);
+
 class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 {
   public:
@@ -81,7 +83,9 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     VectorXu z_;
     MatrixXf centroids_;
     MatrixXf prevCentroids_;
-    MatrixXf muR_;
+    MatrixXf deltaR_;
+    MatrixXf R_;
+    GpuMatrix<float> d_R_;
     cv::Mat zIrgb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
     cv::Mat Icomb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroidsPc_;
@@ -107,6 +111,7 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
   resultsPath_("../results/"),
   fout_("./stats.log",ofstream::out),
   mode_(mode), 
+  d_R_(3,3),
   lambda_(cos(93.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
   rndGen_(91)
 {
@@ -123,7 +128,9 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
     pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
   }
   centroids_ = MatrixXf::Zero(3,1); centroids_ << 1.,0,0;
-  prevCentroids_ = MatrixXf::Zero(3,1); prevCentroids_ << 1.,0,0;
+  prevCentroids_ = MatrixXf::Zero(3,0);
+  R_ = MatrixXf::Identity(3,3);
+  d_R_.set(R_);
 }
 
 RealtimeDDPvMF::~RealtimeDDPvMF()
@@ -134,6 +141,8 @@ RealtimeDDPvMF::~RealtimeDDPvMF()
 
 void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h) 
 {
+//  cout<<"rotating pc by"<<endl<<d_R_.get()<<endl;
+//  rotatePcGPU(d_normals,d_R_.data(),w*h,3);
   tLog_.tic(-1); // reset all timers
 //  normalExtractor_.compute(data,w,h);
   tLog_.toc(0); 
@@ -187,24 +196,32 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h)
   tLog_.toc(1);
   pddpvmf_->getZfromGpu();
 
-  std::vector<MatrixXf> Rs(centroids_.cols());
-  for(uint32_t k=0; k<centroids_.cols(); ++k)
-  {
-    Rs[k] = rotationFromAtoB<float>(centroids_.col(k),prevCentroids_.col(k));
-//    cout<<"k="<<k<<endl<<Rs[k]<<endl;
-  }
 
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);
     z_ = pddpvmf_->z();
     K_ = pddpvmf_->getK();
-    prevCentroids_  = centroids_;
     centroids_ = pddpvmf_->centroids();
+    prevCentroids_ = pddpvmf_->prevCentroids(); // get them from internal since they keep track of removed clusters
     residual_ = residual;
-    muR_ = SO3<float>::meanRotation(Rs,pddpvmf_->counts().cast<float>(),20);
-//  cout <<"muR"<<endl<<muR_<<endl;
-  }
 
+    std::vector<MatrixXf> Rs(std::min(centroids_.cols(),prevCentroids_.cols()));
+    for(uint32_t k=0; k<centroids_.cols(); ++k)
+      if(k < prevCentroids_.cols())
+      {
+        Rs[k] = rotationFromAtoB<float>(prevCentroids_.col(k),centroids_.col(k));
+        cout<<"k="<<k<<endl<<Rs[k]<<endl;
+      }
+    if(Rs.size()>0)
+    {
+      deltaR_ = SO3<float>::meanRotation(Rs,pddpvmf_->counts().cast<float>(),20);
+      cout<<deltaR_<<endl;
+      R_ = deltaR_*R_;  
+//      MatrixXf RT  =  R_.transpose();
+//      d_R_.set(RT); // make async
+    }
+    cout <<"R det="<<R_.determinant()<<endl<<R_<<endl;
+  }
 
   tLog_.toc(2); // total time
   tLog_.logCycle();
@@ -214,6 +231,8 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h)
   cout<<"---------------------------------------------------------------------------"<<endl;
 
   fout_<<K_<<" "<<residual_<<endl; fout_.flush();
+  
+  OpenniSmoothNormalsGpu::normals_cb(d_normals,w,h);
 }
 
 void RealtimeDDPvMF::visualizePc()
@@ -317,9 +336,8 @@ void RealtimeDDPvMF::visualizePc()
   if(!this->viewer_->updatePointCloud(pc_, "pc"))                               
     this->viewer_->addPointCloud(pc_, "pc");                                    
 
-  Affine3f cosy = muR_;
-  if(!this->viewer_->updateCoordinateSystem(1.0,cosy,"R"))
-    this->viewer_->addCoordinateSystemPose("R",cosy);
+  if(!updateCosy(this->viewer_,R_,"R"))
+    addCosy(this->viewer_,R_, "R");
 
 //  centPc = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(
 //      new pcl::PointCloud<pcl::PointXYZRGB>(K_,1));

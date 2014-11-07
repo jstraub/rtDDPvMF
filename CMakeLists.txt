@@ -96,6 +96,7 @@ link_directories(
 
 cuda_add_executable(realtimeDDPvMF_openni
   ./src/realtimeDDPvMF_openni.cpp
+  ./src/pcl_helpers.cpp
 #  ./src/rtDDPvMF.cpp
 #  ./src/realtimeDDPvMF.cpp
   )
