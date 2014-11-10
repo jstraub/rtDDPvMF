@@ -62,7 +62,7 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B);
     ~RealtimeDDPvMF();
 
-    virtual void normals_cb(float* d_normals, uint32_t w, uint32_t h);
+    virtual void normals_cb(float* d_normals, uint8_t* haveData, uint32_t w, uint32_t h);
 
     TimerLog tLog_;
     double residual_;
@@ -135,11 +135,11 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
 
 RealtimeDDPvMF::~RealtimeDDPvMF()
 {
-  delete pddpvmf_;
+  if(pddpvmf_) delete pddpvmf_;
   fout_.close();
 }
 
-void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* haveData, uint32_t w, uint32_t h) 
+void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t w, uint32_t h) 
 {
 //  cout<<"rotating pc by"<<endl<<d_R_.get()<<endl;
 //  rotatePcGPU(d_normals,d_R_.data(),w*h,3);
@@ -147,7 +147,7 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* haveData, uint32_t w,
 //  normalExtractor_.compute(data,w,h);
   tLog_.toc(0); 
 //  n_cp_ = normalExtractor_.normals();
- copyShuffleGPU(float* in, float* out, uint32_t* ind, int32_t N, int32_t step)
+// copyShuffleGPU(float* in, float* out, uint32_t* ind, int32_t N, int32_t step)
 
 #ifdef RM_NANS_FROM_DEPTH
   uint32_t nNormals = 0;
@@ -188,7 +188,7 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* haveData, uint32_t w,
   for(uint32_t i=0; i<nIter_; ++i)
   {
     cout<<" -- iteration = "<<i<<endl;
-    pddpvmf_->updateLabelsParallel();
+    pddpvmf_->updateLabels();
     pddpvmf_->updateCenters();
   }
   pddpvmf_->updateState();
@@ -233,7 +233,7 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* haveData, uint32_t w,
 
   fout_<<K_<<" "<<residual_<<endl; fout_.flush();
   
-  OpenniSmoothNormalsGpu::normals_cb(d_normals,w,h);
+  OpenniSmoothNormalsGpu::normals_cb(d_normals,d_haveData,w,h);
 }
 
 void RealtimeDDPvMF::visualizePc()

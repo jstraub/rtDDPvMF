@@ -72,6 +72,7 @@ FIND_PACKAGE (Boost 1.46.1 REQUIRED)
 include_directories(                                                            
   include
   ./build/dpMMlowVar/include
+  ./build/dpMMlowVar/src
 #  ./build/dpMM/include
   ./build/cudaPcl/include
   ${EIGEN3_INCLUDE_DIR}                                       
@@ -109,7 +110,7 @@ target_link_libraries (realtimeDDPvMF_openni
   vtkCommon vtkFiltering vtkRendering vtkGraphics
   opencv_core opencv_highgui opencv_contrib opencv_imgproc)
 
-ADD_DEPENDENCIES(realtimeDDPvMF_openni dpMM libCudaPcl)
+ADD_DEPENDENCIES(realtimeDDPvMF_openni dpMMlowVarLib libCudaPcl)
 
 install(DIRECTORY include/ DESTINATION include/                                 
   FILES_MATCHING PATTERN "*.h")                                         
