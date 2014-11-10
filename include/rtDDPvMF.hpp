@@ -1,7 +1,6 @@
 #pragma once
 
 #include <root_includes.hpp>
-#include <defines.h>
 
 #include <signal.h>
 #include <string>
@@ -122,6 +121,7 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
   if(mode_.compare("dp") == 0)
   {
     //    pddpvmf_ =  new DPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
+    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,0.,&rndGen_);
   }else if (mode_.compare("ddp") == 0){
     //TODO
     //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
@@ -139,7 +139,7 @@ RealtimeDDPvMF::~RealtimeDDPvMF()
   fout_.close();
 }
 
-void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h) 
+void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* haveData, uint32_t w, uint32_t h) 
 {
 //  cout<<"rotating pc by"<<endl<<d_R_.get()<<endl;
 //  rotatePcGPU(d_normals,d_R_.data(),w*h,3);
@@ -147,6 +147,7 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint32_t w, uint32_t h)
 //  normalExtractor_.compute(data,w,h);
   tLog_.toc(0); 
 //  n_cp_ = normalExtractor_.normals();
+ copyShuffleGPU(float* in, float* out, uint32_t* ind, int32_t N, int32_t step)
 
 #ifdef RM_NANS_FROM_DEPTH
   uint32_t nNormals = 0;
