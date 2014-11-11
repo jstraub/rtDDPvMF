@@ -111,7 +111,8 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
   fout_("./stats.log",ofstream::out),
   mode_(mode), 
   d_R_(3,3),
-  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
+//  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
+  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(-2.), 
   rndGen_(91)
 {
   fillJET();

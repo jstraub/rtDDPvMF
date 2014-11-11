@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open('statsTest.log','r') as fin:
+with open('./statsTest_ddp.log','r') as fin:
   log = fin.readlines()
-Kmax = 10
+Kmax = 40
 
 import ipdb
 Ns = np.zeros((len(log),Kmax))
