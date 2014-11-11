@@ -162,6 +162,8 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
   tLog_.toc(0);
   pddpvmf_->getZfromGpu(); // cache z_ back from gpu
 
+  pddpvmf_->dumpStats(fout_);
+
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);
     if(z_.rows() != w*h) z_.resize(w*h);
@@ -195,8 +197,6 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
   tLog_.printStats();
   cout<<" residual="<<residual_<<endl;
   cout<<"---------------------------------------------------------------------------"<<endl;
-
-  fout_<<K_<<" "<<residual_<<endl; fout_.flush();
   
   {
     boost::mutex::scoped_lock updateLock(updateModelMutex);
