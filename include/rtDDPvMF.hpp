@@ -104,14 +104,14 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 
 
 RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B) 
-  : OpenniSmoothNormalsGpu(f_d, eps, B),
+  : OpenniSmoothNormalsGpu(f_d, eps, B, true),
     tLog_("./timer.log",3,"TimerLog"),
   residual_(0.0), nIter_(10), 
   resultsPath_("../results/"),
   fout_("./stats.log",ofstream::out),
   mode_(mode), 
   d_R_(3,3),
-  lambda_(cos(93.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
+  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
   rndGen_(91)
 {
   fillJET();
@@ -144,74 +144,39 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
 //  cout<<"rotating pc by"<<endl<<d_R_.get()<<endl;
 //  rotatePcGPU(d_normals,d_R_.data(),w*h,3);
   tLog_.tic(-1); // reset all timers
-//  normalExtractor_.compute(data,w,h);
-  tLog_.toc(0); 
-//  n_cp_ = normalExtractor_.normals();
-// copyShuffleGPU(float* in, float* out, uint32_t* ind, int32_t N, int32_t step)
-
-#ifdef RM_NANS_FROM_DEPTH
-  uint32_t nNormals = 0;
-  for(uint32_t i=0; i<n_cp_->width; i+=SUBSAMPLE_STEP)
-    for(uint32_t j=0; j<n_cp_->height; j+=SUBSAMPLE_STEP)
-      if(n_cp_->points[i+j*n_cp_->width].x == n_cp_->points[i+j*n_cp_->width].x  )
-        nNormals ++; // if not nan add one valid normal
   
-  spx_.reset(new MatrixXf(3,nNormals));
-  uint32_t k=0;
-  for(uint32_t i=0; i<n_cp_->width; i+=SUBSAMPLE_STEP)
-    for(uint32_t j=0; j<n_cp_->height; j+=SUBSAMPLE_STEP)
-      if(n_cp_->points[i+j*n_cp_->width].x == n_cp_->points[i+j*n_cp_->width].x )
-      {
-        (*spx_)(0,k) = n_cp_->points[i+j*n_cp_->width].x;
-        (*spx_)(1,k) = n_cp_->points[i+j*n_cp_->width].y;
-        (*spx_)(2,k) = n_cp_->points[i+j*n_cp_->width].z;
-        assert(fabs(spx_->col(k).norm()-1.0) <1e-3);
-        ++k;
-      }
+//  pddpvmf_->nextTimeStep(d_normals,w*h,3,0);
+  int32_t nComp = 0;
+  float* d_nComp = this->normalExtract->d_normalsComp(nComp);
+//  cout<<"compressed to "<<nComp<<endl;
+  pddpvmf_->nextTimeStep(d_nComp,nComp,3,0);
 
-  cout<<"# valid Normals: "<< nNormals<<endl;
-  cout<<"# valid Normals: "<< spx_->rows()<<" x "<<spx_->cols()<<endl;
-  pddpvmf_->nextTimeStep(spx_);
-
-#else
-//  uint32_t nNormals = 0;
-//  for(uint32_t i=0; i<n_cp_->width; i+=SUBSAMPLE_STEP)
-//    for(uint32_t j=0; j<n_cp_->height; j+=SUBSAMPLE_STEP)
-//      if(n_cp_->points[i+j*n_cp_->width].x != n_cp_->points[i+j*n_cp_->width].x  )
-//        nNormals ++; // if not nan add one valid normal
-//  cout<<"#nans = "<<nNormals<<endl;
-  pddpvmf_->nextTimeStep(d_normals,w*h,3,0);
-#endif
-
-  tLog_.tic(1);
-  cout<<"iterating now"<<endl;
+  tLog_.tic(0);
   for(uint32_t i=0; i<nIter_; ++i)
   {
-    cout<<" -- iteration = "<<i<<endl;
     pddpvmf_->updateLabels();
     pddpvmf_->updateCenters();
+    if(pddpvmf_->converged()) break;
   }
   pddpvmf_->updateState();
-  double residual = 0.0;
-
-  tLog_.toc(1);
-  pddpvmf_->getZfromGpu();
-
+  tLog_.toc(0);
+  pddpvmf_->getZfromGpu(); // cache z_ back from gpu
 
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);
-    z_ = pddpvmf_->z();
+    if(z_.rows() != w*h) z_.resize(w*h);
+    this->normalExtract->uncompressCpu(pddpvmf_->z().data(),pddpvmf_->z().rows() ,z_.data(),z_.rows());
     K_ = pddpvmf_->getK();
+
     centroids_ = pddpvmf_->centroids();
     prevCentroids_ = pddpvmf_->prevCentroids(); // get them from internal since they keep track of removed clusters
-    residual_ = residual;
 
     std::vector<MatrixXf> Rs(std::min(centroids_.cols(),prevCentroids_.cols()));
     for(uint32_t k=0; k<centroids_.cols(); ++k)
       if(k < prevCentroids_.cols())
       {
         Rs[k] = rotationFromAtoB<float>(prevCentroids_.col(k),centroids_.col(k));
-        cout<<"k="<<k<<endl<<Rs[k]<<endl;
+//        cout<<"k="<<k<<endl<<Rs[k]<<endl;
       }
     if(Rs.size()>0)
     {
@@ -221,10 +186,10 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
 //      MatrixXf RT  =  R_.transpose();
 //      d_R_.set(RT); // make async
     }
-    cout <<"R det="<<R_.determinant()<<endl<<R_<<endl;
+//    cout <<"R det="<<R_.determinant()<<endl<<R_<<endl;
   }
 
-  tLog_.toc(2); // total time
+  tLog_.toc(1); // total time
   tLog_.logCycle();
   cout<<"---------------------------------------------------------------------------"<<endl;
   tLog_.printStats();
@@ -233,14 +198,20 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
 
   fout_<<K_<<" "<<residual_<<endl; fout_.flush();
   
-  OpenniSmoothNormalsGpu::normals_cb(d_normals,d_haveData,w,h);
+  {
+    boost::mutex::scoped_lock updateLock(updateModelMutex);
+    pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr nDispPtr = normalExtract->normalsPc();
+    nDisp_ = pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB>(*nDispPtr));
+    normalsImg_ = normalExtract->normalsImg();
+    this->update_ = true; 
+  }
 }
 
 void RealtimeDDPvMF::visualizePc()
 {                                                                               
   //copy again                                                                  
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr nDisp(                                 
-      new pcl::PointCloud<pcl::PointXYZRGB>(*nDisp_));                          
+      new pcl::PointCloud<pcl::PointXYZRGB>(*nDisp_)); 
 //  cv::Mat nI(nDisp->height,nDisp->width,CV_32FC3);                              
 //  for(uint32_t i=0; i<nDisp->width; ++i)                                        
 //    for(uint32_t j=0; j<nDisp->height; ++j)                                     
@@ -266,7 +237,7 @@ void RealtimeDDPvMF::visualizePc()
 
   uint32_t Kmax = 5;
   uint32_t k=0;
-  cout<<" z shape "<<z_.rows()<<" "<< nDisp->width<<" " <<nDisp->height<<endl;
+//  cout<<" z shape "<<z_.rows()<<" "<< nDisp->width<<" " <<nDisp->height<<endl;
 //  cv::Mat Iz(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC1); 
   zIrgb = cv::Mat(nDisp->height/SUBSAMPLE_STEP,nDisp->width/SUBSAMPLE_STEP,CV_8UC3);
   for(uint32_t i=0; i<nDisp->width; i+=SUBSAMPLE_STEP)
