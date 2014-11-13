@@ -61,7 +61,7 @@ def plotNperCluster(path,labels=True,ticks=True):
 #  for i in range(0,len(tik),2):
 #    tik[i] = ''
 #  ax.set_yticklabels(tik)
-  ax.set_yticks(np.arange(0,100,50))
+  ax.set_yticks(np.arange(10,100,50))
   ax.spines['top'].set_visible(False)
 #  ax.spines['right'].set_visible(False)
   ax.get_xaxis().tick_bottom()
@@ -71,13 +71,14 @@ def plotNperCluster(path,labels=True,ticks=True):
 
 outPath = '/scratch/xtion/dpMMlowVar/2014-11-11-22-18-13/'
 outPath = '/scratch/xtion/dpMMlowVar/results/'
+outPath = '/home/jstraub/workspace/writing/paper/jstraub_2015_aistats_DPvMFMM/figuresDDP/'
 
 path = '/scratch/xtion/dpMMlowVar/dp//stats.log'
 fig1, tiks = plotNperCluster(path,False,False)
 plt.savefig(outPath+'statsDPplot.pdf',figure=fig1) 
 
 path = '/scratch/xtion/dpMMlowVar/ddp/stats.log'
-fig2, tiks = plotNperCluster(path,False,True)
+fig2, tiks = plotNperCluster(path,False,False)
 plt.savefig(outPath+'statsDDPplot.pdf',figure=fig2) 
 
 #plt.show()
