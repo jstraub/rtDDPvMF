@@ -49,10 +49,6 @@ using namespace Eigen;
 // full depth image with nans
 //TimerLog: stats over timer cycles (mean +- 3*std):  4.58002+- 9.72736 19.0138+- 17.9823 49.9746+- 30.6944
 
-struct CfgRtDDPvMF
-{
-
-};
 
 void rotatePcGPU(float* d_pc, float* d_R, int32_t N, int32_t step);
 
@@ -111,8 +107,9 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
   fout_("./stats.log",ofstream::out),
   mode_(mode), 
   d_R_(3,3),
-//  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
-  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(-2.), 
+  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
+//  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_), 
+//  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(-2.), 
   rndGen_(91)
 {
   fillJET();
@@ -159,10 +156,8 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
     pddpvmf_->updateCenters();
     if(pddpvmf_->converged()) break;
   }
-  pddpvmf_->updateState();
   tLog_.toc(0);
   pddpvmf_->getZfromGpu(); // cache z_ back from gpu
-
   pddpvmf_->dumpStats(fout_);
 
   {
@@ -186,12 +181,14 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
       deltaR_ = SO3<float>::meanRotation(Rs,pddpvmf_->counts().cast<float>(),20);
       cout<<deltaR_<<endl;
       R_ = deltaR_*R_;  
+      pddpvmf_->rotateUninstantiated(deltaR_.transpose());
 //      MatrixXf RT  =  R_.transpose();
 //      d_R_.set(RT); // make async
     }
 //    cout <<"R det="<<R_.determinant()<<endl<<R_<<endl;
   }
 
+  pddpvmf_->updateState();
   tLog_.toc(1); // total time
   tLog_.logCycle();
   cout<<"---------------------------------------------------------------------------"<<endl;
@@ -261,7 +258,7 @@ void RealtimeDDPvMF::visualizePc()
         zIrgb.at<cv::Vec3b>(j/SUBSAMPLE_STEP,i/SUBSAMPLE_STEP)[2] = 255;    
       }
 
-  cout<<this->rgb_.rows <<" " << this->rgb_.cols<<endl;
+//  cout<<this->rgb_.rows <<" " << this->rgb_.cols<<endl;
   if(this->rgb_.rows>1 && this->rgb_.cols >1)
   {
     cv::addWeighted(this->rgb_ , 0.7, zIrgb, 0.3, 0.0, Icomb);
