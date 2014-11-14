@@ -75,11 +75,11 @@ outPath = '/home/jstraub/workspace/writing/paper/jstraub_2015_aistats_DPvMFMM/fi
 
 path = '/scratch/xtion/dpMMlowVar/dp//stats.log'
 fig1, tiks = plotNperCluster(path,False,False)
-plt.savefig(outPath+'statsDPplot.pdf',figure=fig1) 
+#plt.savefig(outPath+'statsDPplot.pdf',figure=fig1) 
 
 path = '/scratch/xtion/dpMMlowVar/ddp/stats.log'
 fig2, tiks = plotNperCluster(path,False,False)
-plt.savefig(outPath+'statsDDPplot.pdf',figure=fig2) 
+#plt.savefig(outPath+'statsDDPplot.pdf',figure=fig2) 
 
 #plt.show()
 fig1.show()
@@ -89,14 +89,14 @@ raw_input('save figs to {}?'.format(outPath))
 #fig = plotNperCluster(path,False,True)
 tiks -= tiks%30
 for t in tiks:
-  tt = int(t)
-  subp.call('cp /scratch/xtion/dpMMlowVar/dp/frame{:05d}.png {}/dp/'.format(tt,outPath),shell=True)
-  subp.call('cp /scratch/xtion/dpMMlowVar/ddp/frame{:05d}.png {}/ddp/'.format(tt,outPath),shell=True)
-  subp.call('cp /scratch/xtion/dpMMlowVar/dp_fbf/frame{:05d}.png {}/dp_fbf/'.format(tt,outPath),shell=True)
+  for tt in [int(t), int(t)+1]:
+    subp.call('cp /scratch/xtion/dpMMlowVar/dp/frame{:05d}.png {}/dp/'.format(tt,outPath),shell=True)
+    subp.call('cp /scratch/xtion/dpMMlowVar/ddp/frame{:05d}.png {}/ddp/'.format(tt,outPath),shell=True)
+    subp.call('cp /scratch/xtion/dpMMlowVar/dp_fbf/frame{:05d}.png {}/dp_fbf/'.format(tt,outPath),shell=True)
 
-  subp.call('cp /scratch/xtion/dpMMlowVar/dp/frame{:05d}_lbl.png {}/dp/'.format(tt,outPath),shell=True)
-  subp.call('cp /scratch/xtion/dpMMlowVar/ddp/frame{:05d}_lbl.png {}/ddp/'.format(tt,outPath),shell=True)
-  subp.call('cp /scratch/xtion/dpMMlowVar/dp_fbf/frame{:05d}_lbl.png {}/dp_fbf/'.format(tt,outPath),shell=True)
+    subp.call('cp /scratch/xtion/dpMMlowVar/dp/frame{:05d}_lbl.png {}/dp/'.format(tt,outPath),shell=True)
+    subp.call('cp /scratch/xtion/dpMMlowVar/ddp/frame{:05d}_lbl.png {}/ddp/'.format(tt,outPath),shell=True)
+    subp.call('cp /scratch/xtion/dpMMlowVar/dp_fbf/frame{:05d}_lbl.png {}/dp_fbf/'.format(tt,outPath),shell=True)
 
 #path = '/scratch/xtion/dpMMlowVar/2014-11-11-22-18-13/statsDDP.log'
 #fig = plotNperCluster(path,False,True)
