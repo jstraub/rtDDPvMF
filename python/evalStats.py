@@ -8,7 +8,7 @@ mpl.rc('font',size=18)
 mpl.rc('lines',linewidth=4.)                                                    
 figSize = (20., 7.)                 
 
-def plotNperCluster(path,labels=True,ticks=True):
+def plotNperCluster(path,labels=True,ticks=True,frameMax=None):
   with open(path,'r') as fin:
     log = fin.readlines()
   Kmax = 40
@@ -25,11 +25,19 @@ def plotNperCluster(path,labels=True,ticks=True):
       Ns[i,int(n[k+2+Ks[i]])] = n[k+2]
       
   Ns = Ns[:,(Ns.sum(axis=0) > 0)]
+  nFrame = Ns.shape[0]
+
+
   csumNs = Ns.cumsum(axis=1)
   csumNs = np.c_[np.zeros((Ns.shape[0],1)),csumNs]
 
   csumNs /= 640*480. # csumNs.max()
   csumNs *= 100.
+
+  yMax = csumNs.max()
+  if not frameMax is None:
+    Ns = Ns[0:frameMax, :]
+    csumNs = csumNs[0:frameMax,:]
 
   #ipdb.set_trace()
   from js.utils.plot.colors import colorScheme
@@ -45,8 +53,8 @@ def plotNperCluster(path,labels=True,ticks=True):
         alpha=0.4,color=col[i-1],lw=0)
     plt.plot(np.arange(Ns.shape[0]),csumNs[:,i],color=(0,0,0),lw=1.)
   plt.plot(np.arange(Ns.shape[0]),csumNs[:,-1],color=(0,0,0),lw=2.)
-  plt.xlim((0.,csumNs.shape[0]))
-#  plt.ylim((0.,100.))
+  plt.xlim((0.,nFrame))
+  plt.ylim((0.,yMax))
   if labels:
     plt.ylabel('% of normals')
     plt.xlabel('frame number')
@@ -67,19 +75,33 @@ def plotNperCluster(path,labels=True,ticks=True):
   ax.get_xaxis().tick_bottom()
   ax.get_yaxis().tick_right()
   plt.subplots_adjust(bottom=0.8);
-  return fig, tiks
+  return fig, tiks, nFrame
 
 outPath = '/scratch/xtion/dpMMlowVar/2014-11-11-22-18-13/'
-outPath = '/scratch/xtion/dpMMlowVar/results/'
 outPath = '/home/jstraub/workspace/writing/paper/jstraub_2015_aistats_DPvMFMM/figuresDDP/'
+outPath = '/scratch/xtion/dpMMlowVar/results/'
+outPath = '/scratch/xtion/dpMMlowVar/resultsVideo/'
 
 path = '/scratch/xtion/dpMMlowVar/dp//stats.log'
-fig1, tiks = plotNperCluster(path,False,False)
+fig1, tiks, nFrame = plotNperCluster(path,False,False)
 #plt.savefig(outPath+'statsDPplot.pdf',figure=fig1) 
+if True:
+  for frNumber in range(nFrame):
+    print frNumber
+    fig1, tiks, _ = plotNperCluster(path,False,False,frNumber)
+    plt.savefig(outPath+'statsDPplot_{:05}.png'.format(frNumber),figure=fig1) 
+    plt.close(fig1)
+  #  fig1.show()
+  #  raw_input()
 
 path = '/scratch/xtion/dpMMlowVar/ddp/stats.log'
-fig2, tiks = plotNperCluster(path,False,False)
+fig2, tiks,nFrame = plotNperCluster(path,False,False)
 #plt.savefig(outPath+'statsDDPplot.pdf',figure=fig2) 
+for frNumber in range(nFrame):
+  print frNumber
+  fig2, tiks, _ = plotNperCluster(path,False,False,frNumber)
+  plt.savefig(outPath+'statsDDPplot_{:05}.png'.format(frNumber),figure=fig2) 
+  plt.close(fig2)
 
 #plt.show()
 fig1.show()
