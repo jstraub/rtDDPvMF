@@ -16,7 +16,7 @@ include(ExternalProject)
 ExternalProject_add(dpMMlowVarLib
   GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/dpMMlowVar.git/
   GIT_TAG master
-  UPDATE_COMMAND git pull
+  #UPDATE_COMMAND git pull
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dpMMlowVar
   CMAKE_COMMAND cmake .
   BUILD_COMMAND make -j6 #dpmm #dpStickGMM dpDirMM
