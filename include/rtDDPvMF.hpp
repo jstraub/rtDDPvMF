@@ -34,9 +34,8 @@
 #include <timer.hpp>
 #include <timerLog.hpp>
 
-#include <clusterer.hpp>
-#include <ddpvMFmeans.hpp>
-#include <ddpvMFmeansCUDA.hpp>
+#include <ddpmeansCUDA.hpp>
+#include <sphericalData.hpp>
 
 #include <openniSmoothNormalsGpu.hpp>
 #include <SO3.hpp>
@@ -85,11 +84,12 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
     cv::Mat Icomb;// (nDisp_.height/SUBSAMPLE_STEP,nDisp_.width/SUBSAMPLE_STEP,CV_8UC3);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroidsPc_;
 
-    boost::shared_ptr<MatrixXf> spx_; // normals
+//    boost::shared_ptr<MatrixXf> spx_; // normals
+    boost::shared_ptr<ClDataGpuf> cld_; // clustered data
     float lambda_, beta_, Q_;
     boost::mt19937 rndGen_;
 //    DDPvMFMeans<float>* pddpvmf_;
-    DDPvMFMeansCUDA<float>* pddpvmf_;
+    DDPMeansCUDA<float,Spherical<float> >* pddpvmf_;
 
     void fillJET();
     float JET_r_[256];
@@ -114,16 +114,19 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
 {
   fillJET();
   cout<<"inititalizing optSO3"<<endl;
-  spx_.reset(new MatrixXf(3,1));
-  (*spx_) << 1,0,0; // init just to get the dimensions right.
+  shared_ptr<MatrixXf> tmp(new MatrixXf(3,1));
+  (*tmp) << 1,0,0; // init just to get the dimensions right.
+  cld_ = shared_ptr<ClDataGpuf>(new ClDataGpuf(tmp,0)); 
   if(mode_.compare("dp") == 0)
   {
     //    pddpvmf_ =  new DPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,0.,&rndGen_);
+//    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,0.,&rndGen_);
+    pddpvmf_ =  new DDPMeansCUDA<float,Spherical<float> >(cld_,lambda_,0.,beta_);
   }else if (mode_.compare("ddp") == 0){
     //TODO
     //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
+//    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
+    pddpvmf_ =  new DDPMeansCUDA<float,Spherical<float> >(cld_,lambda_,Q_,beta_);
   }
   centroids_ = MatrixXf::Zero(3,1); centroids_ << 1.,0,0;
   prevCentroids_ = MatrixXf::Zero(3,0);
@@ -147,7 +150,7 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
   int32_t nComp = 0;
   float* d_nComp = this->normalExtract->d_normalsComp(nComp);
 //  cout<<"compressed to "<<nComp<<endl;
-  pddpvmf_->nextTimeStep(d_nComp,nComp,3,0);
+  pddpvmf_->nextTimeStepGpu(d_nComp,nComp,3,0);
 
   tLog_.tic(0);
   for(uint32_t i=0; i<nIter_; ++i)

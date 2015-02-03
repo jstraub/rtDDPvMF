@@ -16,7 +16,7 @@ include(ExternalProject)
 ExternalProject_add(dpMMlowVarLib
   GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/dpMMlowVar.git/
   GIT_TAG master
-  #UPDATE_COMMAND git pull
+  UPDATE_COMMAND git pull
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dpMMlowVar
   CMAKE_COMMAND cmake .
   BUILD_COMMAND make -j6 #dpmm #dpStickGMM dpDirMM
@@ -66,30 +66,30 @@ set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_20,code=sm_20 -genc
 find_package (Eigen3 REQUIRED)
 find_package (CUDA REQUIRED)
 find_package (OpenCV REQUIRED)
-FIND_PACKAGE (Boost 1.46.1 REQUIRED)
+FIND_PACKAGE (Boost 1.54 REQUIRED)
+FIND_PACKAGE (PCL REQUIRED)
 
 
 include_directories(                                                            
   include
   ./build/dpMMlowVar/include
-  ./build/dpMMlowVar/src
-#  ./build/dpMM/include
   ./build/cudaPcl/include
+  ${PCL_INCLUDE_DIRS}                                       
   ${EIGEN3_INCLUDE_DIR}                                       
-  /usr/include                                        
+#  /usr/include                                        
   #$ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1.bak/
-    $ENV{WORKSPACE_HOME}/3rdparty/include/pcl-1.7/
-    $ENV{WORKSPACE_HOME}/3rdparty/include/vtk-5.8/
+#    $ENV{WORKSPACE_HOME}/3rdparty/include/pcl-1.7/
+#    $ENV{WORKSPACE_HOME}/3rdparty/include/vtk-5.8/
   #/usr/include/pcl-1.7/
-  /usr/include/ni
+#  /usr/include/ni
   #  /usr/include/vtk-5.8/
   ${Boost_INCLUDE_DIRS}
 )                                                                               
                                                                                 
 link_directories(
-  $ENV{WORKSPACE_HOME}/3rdparty/lib/vtk-5.8/
+#  $ENV{WORKSPACE_HOME}/3rdparty/lib/vtk-5.8/
   ${Boost_LIBRARY_DIRS}
-  $ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1/build
+#  $ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1/build
   ./build/dpMMlowVar/lib/
 #  ./build/dpMM/lib/
   ./build/cudaPcl/lib/
