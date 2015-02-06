@@ -3,6 +3,7 @@
 #include <string>
 //#include <realtimeDDPvMF_openni.hpp>
 #include <rtDDPvMF.hpp>
+#include <rtSpkm.hpp>
 
 // Utilities and system includes
 //#include <helper_functions.h>
@@ -31,6 +32,8 @@ int main (int argc, char** argv)
     return 1;
   }
 
+  int K = 7;
+  if(vm.count("K")) K = vm["K"].as<int>();
   string mode = "ddp";
   if(vm.count("mode")) mode = vm["mode"].as<string>();
 
@@ -38,7 +41,7 @@ int main (int argc, char** argv)
 
   if(mode.compare("spkm") == 0)
   {
-    RealtimeSpkm v(540.,0.2*0.2,10,);
+    RealtimeSpkm v(540.,0.2*0.2,10,K);
     v.run ();
   }else{
     RealtimeDDPvMF v(mode,540.,0.2*0.2,10);

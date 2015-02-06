@@ -128,12 +128,9 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
     //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
 //    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
     pddpvmf_ =  new DDPMeansCUDA<float,Spherical<float> >(cld_,lambda_,Q_,beta_);
-  }else if (mode_.compare("spkm") == 0){
-    //TODO
-    //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-//    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
-    pddpvmf_ =  new KMeansCUDA<float,Spherical<float> >(cld_);
-  }
+  }else 
+    exit(1);
+    
   centroids_ = MatrixXf::Zero(3,1); centroids_ << 1.,0,0;
   prevCentroids_ = MatrixXf::Zero(3,0);
   R_ = MatrixXf::Identity(3,3);

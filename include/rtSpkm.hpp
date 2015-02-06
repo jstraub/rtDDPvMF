@@ -49,12 +49,10 @@ using namespace Eigen;
 //TimerLog: stats over timer cycles (mean +- 3*std):  4.58002+- 9.72736 19.0138+- 17.9823 49.9746+- 30.6944
 
 
-void rotatePcGPU(float* d_pc, float* d_R, int32_t N, int32_t step);
-
 class RealtimeSpkm : public OpenniSmoothNormalsGpu
 {
   public:
-    RealtimeSpkm(std::string mode,double f_d, double eps, uint32_t B);
+    RealtimeSpkm(double f_d, double eps, uint32_t B, uint32_t K);
     ~RealtimeSpkm();
 
     virtual void normals_cb(float* d_normals, uint8_t* haveData, uint32_t w, uint32_t h);
@@ -71,7 +69,6 @@ class RealtimeSpkm : public OpenniSmoothNormalsGpu
 
     string resultsPath_;
     ofstream fout_;
-    std::string mode_;
 
     uint32_t K_;
     VectorXu z_;
@@ -105,7 +102,6 @@ RealtimeSpkm::RealtimeSpkm(double f_d, double eps, uint32_t B, uint32_t K)
   residual_(0.0), nIter_(10), 
   resultsPath_("../results/"),
   fout_("./stats.log",ofstream::out),
-  mode_(mode), 
 //  d_R_(3,3),
   rndGen_(91)
 {
@@ -150,7 +146,7 @@ void RealtimeSpkm::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t w,
   }
   tLog_.toc(0);
   pspkm_->getZfromGpu(); // cache z_ back from gpu
-  pspkm_->dumpStats(fout_);
+//  pspkm_->dumpStats(fout_);
 
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);
@@ -293,8 +289,8 @@ void RealtimeSpkm::visualizePc()
   if(!this->viewer_->updatePointCloud(pc_, "pc"))                               
     this->viewer_->addPointCloud(pc_, "pc");                                    
 
-  if(!updateCosy(this->viewer_,R_,"R"))
-    addCosy(this->viewer_,R_, "R");
+//  if(!updateCosy(this->viewer_,R_,"R"))
+//    addCosy(this->viewer_,R_, "R");
 
 //  centPc = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(
 //      new pcl::PointCloud<pcl::PointXYZRGB>(K_,1));
