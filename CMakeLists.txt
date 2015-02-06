@@ -88,6 +88,7 @@ include_directories(
                                                                                 
 link_directories(
 #  $ENV{WORKSPACE_HOME}/3rdparty/lib/vtk-5.8/
+  ${PCL_LIBRARY_DIRS}                                                           
   ${Boost_LIBRARY_DIRS}
 #  $ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1/build
   ./build/dpMMlowVar/lib/
