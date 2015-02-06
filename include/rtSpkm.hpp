@@ -135,15 +135,17 @@ void RealtimeSpkm::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t w,
   int32_t nComp = 0;
   float* d_nComp = this->normalExtract->d_normalsComp(nComp);
 //  cout<<"compressed to "<<nComp<<endl;
-  pspkm_->nextTimeStepGpu(d_nComp,nComp,3,0);
+  pspkm_->nextTimeStepGpu(d_nComp,nComp,3,0,false);
 
   tLog_.tic(0);
   for(uint32_t i=0; i<nIter_; ++i)
   {
     pspkm_->updateLabels();
     pspkm_->updateCenters();
+    cout<<pspkm_->counts().transpose()<<endl;
     if(pspkm_->converged()) break;
   }
+    cout<<pspkm_->centroids()<<endl;
   tLog_.toc(0);
   pspkm_->getZfromGpu(); // cache z_ back from gpu
 //  pspkm_->dumpStats(fout_);

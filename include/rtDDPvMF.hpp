@@ -102,7 +102,7 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 
 RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B) 
   : OpenniSmoothNormalsGpu(f_d, eps, B, true),
-    tLog_("./timer.log",3,"TimerLog"),
+    tLog_("./timer.log",2,"TimerLog"),
   residual_(0.0), nIter_(10), 
   resultsPath_("../results/"),
   fout_("./stats.log",ofstream::out),
