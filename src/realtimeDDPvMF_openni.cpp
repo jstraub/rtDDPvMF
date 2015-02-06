@@ -18,8 +18,8 @@ int main (int argc, char** argv)
   po::options_description desc("Allowed options");
   desc.add_options()
     ("help,h", "produce help message")
-    ("mode", po::value<string>(), 
-    "mode of the rtDDPvMF (direct, approx)")
+    ("K,K", po::value<int>(), "K for spkm clustering")
+    ("mode", po::value<string>(), "mode of the rtDDPvMF (spkm, dp, ddp)")
     ;
 
   po::variables_map vm;
@@ -36,8 +36,14 @@ int main (int argc, char** argv)
 
   findCudaDevice(argc,(const char**)argv);
 
-  RealtimeDDPvMF v(mode,540.,0.2*0.2,10);
-  v.run ();
+  if(mode.compare("spkm") == 0)
+  {
+    RealtimeSpkm v(540.,0.2*0.2,10,);
+    v.run ();
+  }else{
+    RealtimeDDPvMF v(mode,540.,0.2*0.2,10);
+    v.run ();
+  }
   cout<<cudaDeviceReset()<<endl;
   return (0);
 }
