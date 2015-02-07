@@ -143,7 +143,7 @@ void RealtimeSpkm::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t w,
     pspkm_->updateLabels();
     pspkm_->updateCenters();
     cout<<pspkm_->counts().transpose()<<endl;
-    if(pspkm_->converged()) break;
+    if(pspkm_->convergedCounts(100)) break;
   }
     cout<<pspkm_->centroids()<<endl;
   tLog_.toc(0);
