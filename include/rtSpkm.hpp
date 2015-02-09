@@ -31,7 +31,6 @@
 #include <vtkWindowToImageFilter.h>
 #include <vtkPNGWriter.h>
 
-#include <timer.hpp>
 #include <timerLog.hpp>
 
 #include <sphericalData.hpp>
@@ -52,7 +51,7 @@ using namespace Eigen;
 class RealtimeSpkm : public OpenniSmoothNormalsGpu
 {
   public:
-    RealtimeSpkm(double f_d, double eps, uint32_t B, uint32_t K);
+    RealtimeSpkm(std::string pathOut, double f_d, double eps, uint32_t B, uint32_t K);
     ~RealtimeSpkm();
 
     virtual void normals_cb(float* d_normals, uint8_t* haveData, uint32_t w, uint32_t h);
@@ -96,12 +95,12 @@ class RealtimeSpkm : public OpenniSmoothNormalsGpu
 // ---------------------------------- impl -----------------------------------
 
 
-RealtimeSpkm::RealtimeSpkm(double f_d, double eps, uint32_t B, uint32_t K) 
+RealtimeSpkm::RealtimeSpkm(std::string pathOut, double f_d, double eps, uint32_t B, uint32_t K) 
   : OpenniSmoothNormalsGpu(f_d, eps, B, true),
-    tLog_("./timer.log",2,"TimerLog"),
+    tLog_(pathOut+std::string("./timer.log"),2,5,"TimerLog"),
   residual_(0.0), nIter_(10), 
-  resultsPath_("../results/"),
-  fout_("./stats.log",ofstream::out),
+  resultsPath_(pathOut),
+  fout_((pathOut+std::string("./stats.log")).data(),ofstream::out),
 //  d_R_(3,3),
   rndGen_(91)
 {
@@ -140,15 +139,15 @@ void RealtimeSpkm::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t w,
   tLog_.tic(0);
   for(uint32_t i=0; i<nIter_; ++i)
   {
+    cout<<"@"<<i<<" :"<<endl;
     pspkm_->updateLabels();
     pspkm_->updateCenters();
-    cout<<pspkm_->counts().transpose()<<endl;
-    if(pspkm_->convergedCounts(100)) break;
+    if(pspkm_->convergedCounts(nComp/100)) break;
   }
     cout<<pspkm_->centroids()<<endl;
   tLog_.toc(0);
   pspkm_->getZfromGpu(); // cache z_ back from gpu
-//  pspkm_->dumpStats(fout_);
+  if(tLog_.startLogging()) pspkm_->dumpStats(fout_);
 
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);

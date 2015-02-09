@@ -20,6 +20,9 @@ int main (int argc, char** argv)
   desc.add_options()
     ("help,h", "produce help message")
     ("K,K", po::value<int>(), "K for spkm clustering")
+    ("lambdaDeg,l", po::value<double>(), "lambda in degree for dp and ddp")
+    ("beta,b", po::value<double>(), "beta parameter of the ddp")
+    ("nFramesSurvive,s", po::value<int>(), "number of frames a cluster survives without observation")
     ("mode", po::value<string>(), "mode of the rtDDPvMF (spkm, dp, ddp)")
     ;
 
@@ -32,19 +35,42 @@ int main (int argc, char** argv)
     return 1;
   }
 
-  int K = 7;
+  CfgRtDDPvMF cfg;
+  cfg.f_d = 540.;
+  cfg.beta = 1e5;
+  cfg.nFramesSurvive_ = 300;
+//  cfg.nSkipFramesSave = 60;
+  cfg.pathOut = std::string("../results/");
+  double lambdaDeg = 93.;
+  int K = -1;
   if(vm.count("K")) K = vm["K"].as<int>();
-  string mode = "ddp";
-  if(vm.count("mode")) mode = vm["mode"].as<string>();
+  if(vm.count("lambdaDeg")) lambdaDeg = vm["lambdaDeg"].as<double>();
+  if(vm.count("nFramesSurvive")) cfg.nFramesSurvive_ = vm["nFramesSurvive"].as<int>();
+  if(vm.count("beta")) cfg.beta = vm["beta"].as<double>();
+
+  cfg.lambdaFromDeg(lambdaDeg);
+  cfg.QfromFrames2Survive(cfg.nFramesSurvive_);
+
+  if(cfg.nFramesSurvive_==0)
+    cfg.pathOut += "dp_fbf/";  
+  else if(cfg.nFramesSurvive_==1) 
+    cfg.pathOut += "dp/";  
+  else if(K>0)
+    cfg.pathOut += "spkm/";
+  else
+    cfg.pathOut += "ddp/";  
 
   findCudaDevice(argc,(const char**)argv);
-
-  if(mode.compare("spkm") == 0)
+  if(K<0)
   {
-    RealtimeSpkm v(540.,0.2*0.2,10,K);
+    cout<<"rtDDPvMFmeans lambdaDeg="<<cfg.lambdaDeg_<<" beta="<<cfg.beta
+      <<"nFramesSurvive="<<cfg.nFramesSurvive_<<endl;
+    RealtimeDDPvMF v(cfg,0.2*0.2,10);
     v.run ();
   }else{
-    RealtimeDDPvMF v(mode,540.,0.2*0.2,10);
+    cout<<"rtSpkm K="<<K<<endl;
+    cout<<"output path: "<<cfg.pathOut<<endl;
+    RealtimeSpkm v(cfg.pathOut,540.,0.2*0.2,10,K);
     v.run ();
   }
   cout<<cudaDeviceReset()<<endl;

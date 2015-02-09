@@ -21,12 +21,17 @@ def plotTiming(path,name):
   #plt.plot(np.arange(x.shape[0]),x[:,1],label='residual')
   return fig
 
-path = '/scratch/xtion/dpMMlowVar/dp_fbf/timer.log'
+# /scratch/xtion/dpMMlowVar
+# /home/jstraub/workspace/rtDDPvMF/results
+
+path = './dp_fbf/timer.log'
 plotTiming(path,'dp_fbf')
-path = '/scratch/xtion/dpMMlowVar/dp/timer.log'
+path = './dp/timer.log'
 plotTiming(path,'dp')
-path = '/scratch/xtion/dpMMlowVar/ddp/timer.log'
+path = './ddp/timer.log'
 plotTiming(path,'ddp')
+path = './spkm/timer.log'
+plotTiming(path,'spkm')
 
 #path = '/scratch/xtion/dpMMlowVar/timer.log'
 #plotTiming(path)

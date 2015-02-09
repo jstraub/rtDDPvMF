@@ -31,7 +31,6 @@
 #include <vtkWindowToImageFilter.h>
 #include <vtkPNGWriter.h>
 
-#include <timer.hpp>
 #include <timerLog.hpp>
 
 #include <sphericalData.hpp>
@@ -52,27 +51,63 @@ using namespace Eigen;
 
 void rotatePcGPU(float* d_pc, float* d_R, int32_t N, int32_t step);
 
+struct CfgRtDDPvMF
+{
+
+  CfgRtDDPvMF() : f_d(540.0), lambda(-1.), beta(1e5), Q(-2.),
+      nSkipFramesSave(30), nFramesSurvive_(0),lambdaDeg_(90.)
+  {};
+  CfgRtDDPvMF(const CfgRtDDPvMF& cfg)
+    : f_d(cfg.f_d), lambda(cfg.lambda), beta(cfg.beta), Q(cfg.Q),
+      nSkipFramesSave(cfg.nSkipFramesSave), nFramesSurvive_(cfg.nFramesSurvive_),
+      lambdaDeg_(cfg.lambdaDeg_)
+  {
+    pathOut = cfg.pathOut;
+  };
+
+  double f_d;
+  double lambda;  
+  double beta;
+  double Q;
+
+  int32_t nSkipFramesSave;
+  std::string pathOut;
+
+  int32_t nFramesSurvive_;
+  double lambdaDeg_;  
+
+  void lambdaFromDeg(double lambdaDeg)
+  {
+    lambdaDeg_ = lambdaDeg; 
+    lambda = cos(lambdaDeg*M_PI/180.0)-1.;
+  };
+  void QfromFrames2Survive(int32_t nFramesSurvive)
+  { 
+    nFramesSurvive_ = nFramesSurvive;
+    Q = nFramesSurvive == 0? -2. : lambda/double(nFramesSurvive);
+  };
+};
+
 class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 {
   public:
-    RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B);
+    RealtimeDDPvMF(const CfgRtDDPvMF& cfg, double eps, uint32_t B);
     ~RealtimeDDPvMF();
 
-    virtual void normals_cb(float* d_normals, uint8_t* haveData, uint32_t w, uint32_t h);
-
-    TimerLog tLog_;
-    double residual_;
-    uint32_t nIter_;
+    virtual void normals_cb(float* d_normals, uint8_t* haveData, uint32_t w,
+        uint32_t h);
 
     void visualizePc();
 
 
+    TimerLog tLog_;
+    double residual_;
+    uint32_t nIter_;
   protected:
     static const uint32_t SUBSAMPLE_STEP = 1;
-
+    CfgRtDDPvMF cfg_;
     string resultsPath_;
     ofstream fout_;
-    std::string mode_;
 
     uint32_t K_;
     VectorXu z_;
@@ -100,17 +135,15 @@ class RealtimeDDPvMF : public OpenniSmoothNormalsGpu
 // ---------------------------------- impl -----------------------------------
 
 
-RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t B) 
-  : OpenniSmoothNormalsGpu(f_d, eps, B, true),
-    tLog_("./timer.log",2,"TimerLog"),
+RealtimeDDPvMF::RealtimeDDPvMF(const CfgRtDDPvMF& cfg, double eps, uint32_t B) 
+  : OpenniSmoothNormalsGpu(cfg.f_d, eps, B, true),
+    tLog_(cfg.pathOut+std::string("./timer.log"),2,10,"TimerLog"),
   residual_(0.0), nIter_(10), 
-  resultsPath_("../results/"),
-  fout_("./stats.log",ofstream::out),
-  mode_(mode), 
+  cfg_(cfg),
+  resultsPath_(cfg.pathOut),
+  fout_((cfg.pathOut+std::string("./stats.log")).data(),ofstream::out),
   d_R_(3,3),
-  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_/90.),
-//  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(lambda_), 
-//  lambda_(cos(100.0*M_PI/180.0)-1.), beta_(1.e5), Q_(-2.), 
+  lambda_(cfg.lambda), beta_(cfg.beta), Q_(cfg.Q),
   rndGen_(91)
 {
   fillJET();
@@ -118,18 +151,17 @@ RealtimeDDPvMF::RealtimeDDPvMF(std::string mode,double f_d, double eps, uint32_t
   shared_ptr<MatrixXf> tmp(new MatrixXf(3,1));
   (*tmp) << 1,0,0; // init just to get the dimensions right.
   cld_ = shared_ptr<ClDataGpuf>(new ClDataGpuf(tmp,0)); 
-  if(mode_.compare("dp") == 0)
-  {
+//  if(mode_.compare("dp") == 0)
+//  {
     //    pddpvmf_ =  new DPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
 //    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,0.,&rndGen_);
-    pddpvmf_ =  new DDPMeansCUDA<float,Spherical<float> >(cld_,lambda_,0.,beta_);
-  }else if (mode_.compare("ddp") == 0){
-    //TODO
+//    pddpvmf_ =  new DDPMeansCUDA<float,Spherical<float> >(cld_,lambda_,0.,beta_);
+//  }else if (mode_.compare("ddp") == 0){
     //    pddpvmf_ =  new DDPvMFMeans<float>(spx_,lambda_,beta_,Q_,&rndGen_);
 //    pddpvmf_ =  new DDPvMFMeansCUDA<float>(spx_,lambda_,beta_,Q_,&rndGen_);
     pddpvmf_ =  new DDPMeansCUDA<float,Spherical<float> >(cld_,lambda_,Q_,beta_);
-  }else 
-    exit(1);
+//  }else 
+//    exit(1);
     
   centroids_ = MatrixXf::Zero(3,1); centroids_ << 1.,0,0;
   prevCentroids_ = MatrixXf::Zero(3,0);
@@ -158,13 +190,14 @@ void RealtimeDDPvMF::normals_cb(float *d_normals, uint8_t* d_haveData, uint32_t 
   tLog_.tic(0);
   for(uint32_t i=0; i<nIter_; ++i)
   {
+    cout<<"@"<<i<<" :"<<endl;
     pddpvmf_->updateLabels();
     pddpvmf_->updateCenters();
-    if(pddpvmf_->converged()) break;
+    if(pddpvmf_->convergedCounts(nComp/100)) break;
   }
   tLog_.toc(0);
   pddpvmf_->getZfromGpu(); // cache z_ back from gpu
-  pddpvmf_->dumpStats(fout_);
+  if(tLog_.startLogging()) pddpvmf_->dumpStats(fout_);
 
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);
