@@ -7,7 +7,7 @@
 
 // Utilities and system includes
 //#include <helper_functions.h>
-#include <nvidia/helper_cuda.h>
+//#include <nvidia/helper_cuda.h>
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
@@ -28,7 +28,7 @@ int main (int argc, char** argv)
 
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);    
+  po::notify(vm);
 
   if (vm.count("help")) {
     cout << desc << "\n";
@@ -52,13 +52,13 @@ int main (int argc, char** argv)
   cfg.QfromFrames2Survive(cfg.nFramesSurvive_);
 
   if(cfg.nFramesSurvive_==0)
-    cfg.pathOut += "dp_fbf/";  
-  else if(cfg.nFramesSurvive_==1) 
-    cfg.pathOut += "dp/";  
+    cfg.pathOut += "dp_fbf/";
+  else if(cfg.nFramesSurvive_==1)
+    cfg.pathOut += "dp/";
   else if(K>0)
     cfg.pathOut += "spkm/";
   else
-    cfg.pathOut += "ddp/";  
+    cfg.pathOut += "ddp/";
 
   findCudaDevice(argc,(const char**)argv);
   if(K<0)
