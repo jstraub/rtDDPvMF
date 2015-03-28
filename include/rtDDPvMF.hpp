@@ -106,6 +106,7 @@ class RtDDPvMF
     cv::Mat smoothDepthImg();
     cv::Mat smoothDepth(){ return this->depthFilter_->getOutput();};
     cv::Mat normalsImgRaw(){ return normalExtract_->normalsImg();};
+    cv::Mat overlaySeg(cv::Mat img);
 
     double residual_;
     uint32_t nIter_;
@@ -207,11 +208,11 @@ void RtDDPvMF::compute(const uint16_t* depth, uint32_t w, uint32_t h)
   tLog_.toctic(3,4); // total time
   pddpvmf_->updateState();
   tLog_.toc(4);
+  if(tLog_.startLogging()) pddpvmf_->dumpStats(fout_);
   tLog_.logCycle();
   haveLabels_ = false;
 
 //TODO continue here
-  if(tLog_.startLogging()) pddpvmf_->dumpStats(fout_);
   {
     boost::mutex::scoped_lock updateLock(this->updateModelMutex);
 //      pddpvmf_->rotateUninstantiated(deltaR_.transpose());
@@ -240,7 +241,6 @@ const VectorXu& RtDDPvMF::labels()
 cv::Mat RtDDPvMF::labelsImg()
 {
   labels();
-
   uint32_t Kmax = 10;
   cv::Mat zIrgb(h_,w_,CV_8UC3);
   for(uint32_t i=0; i<w_; i+=1)
@@ -277,6 +277,26 @@ cv::Mat RtDDPvMF::smoothDepthImg()
   this->smoothDepth().convertTo(dI,CV_8UC1,255./4.,-1.9);
   return dI;
 }
+
+cv::Mat RtDDPvMF::overlaySeg(cv::Mat img)
+{
+  cv::Mat rgb;
+  if(img.channels() == 1)
+  {
+    std::vector<cv::Mat> grays(3);
+    grays.at(0) = img;
+    grays.at(1) = img;
+    grays.at(2) = img;
+    cv::merge(grays, rgb);
+  }else{
+    rgb = img;
+  }
+  cv::Mat zI = labelsImg();
+  cv::Mat Iout;
+  cv::addWeighted(rgb , 0.7, zI, 0.3, 0.0, Iout);
+  projectDirections(Iout,mfAxes(),cfgNormals_.f_d,mfAxCols_);
+  return Iout;
+};
 
 void RtDDPvMF::fillJET()
 {
