@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <string>
-//#include <realtimeDDPvMF_openni.hpp>
+#include <realtimeDDPvMF.hpp>
 #include <rtDDPvMF.hpp>
 #include <rtSpkm.hpp>
 
@@ -23,7 +23,13 @@ int main (int argc, char** argv)
     ("lambdaDeg,l", po::value<double>(), "lambda in degree for dp and ddp")
     ("beta,b", po::value<double>(), "beta parameter of the ddp")
     ("nFramesSurvive,s", po::value<int>(), "number of frames a cluster survives without observation")
-    ("mode", po::value<string>(), "mode of the rtDDPvMF (spkm, dp, ddp)")
+//    ("mode", po::value<string>(), "mode of the rtDDPvMF (spkm, dp, ddp)")
+    ("in,i", po::value<string>(), "path to input file")
+    ("out,o", po::value<string>(), "path to output file")
+    ("display,d", "display results")
+    ("B,B", po::value<int>(), "B for guided filter")
+    ("eps", po::value<float>(), "eps for guided filter")
+    ("f_d,f", po::value<float>(), "focal length of depth camera")
     ;
 
   po::variables_map vm;
@@ -60,12 +66,27 @@ int main (int argc, char** argv)
   else
     cfg.pathOut += "ddp/";
 
+  string path = "";
+//  string mode = "";
+  cudaPcl::CfgSmoothNormals cfgNormals;
+  cfgNormals.f_d = 540.;
+  cfgNormals.eps = 0.2*0.2;
+  cfgNormals.B = 9;
+  cfgNormals.compress = true;
+  uint32_t T = 10;
+//  if(vm.count("mode")) mode = vm["mode"].as<string>();
+  if(vm.count("in")) path = vm["in"].as<string>();
+  if(vm.count("eps")) cfgNormals.eps = vm["eps"].as<float>();
+  if(vm.count("f_d")) cfgNormals.f_d = vm["f_d"].as<float>();
+  if(vm.count("B")) cfgNormals.B = uint32_t( vm["B"].as<int>());
+
   findCudaDevice(argc,(const char**)argv);
   if(K<0)
   {
     cout<<"rtDDPvMFmeans lambdaDeg="<<cfg.lambdaDeg_<<" beta="<<cfg.beta
       <<"nFramesSurvive="<<cfg.nFramesSurvive_<<endl;
-    RealtimeDDPvMF v(cfg,0.2*0.2,10);
+    shared_ptr<RtDDPvMF> pRtDdpvMF(new RtDDPvMF(cfg,cfgNormals));
+    RealtimeDDPvMF v(pRtDdpvMF);
     v.run ();
   }else{
     cout<<"rtSpkm K="<<K<<endl;

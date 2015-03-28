@@ -50,6 +50,36 @@ using namespace Eigen;
 
 void rotatePcGPU(float* d_pc, float* d_R, int32_t N, int32_t step);
 
+void projectDirections(cv::Mat& I, const MatrixXf&
+    dirs, double f_d, const Matrix<uint8_t,Dynamic,Dynamic>& colors)
+{
+  double scale = 0.1;
+  VectorXf p0(3); p0 << 0.35,0.25,1;
+  double u0 = p0(0)/p0(2)*f_d + 320.;
+  double v0 = p0(1)/p0(2)*f_d + 240.;
+  for(uint32_t k=0; k < dirs.cols(); ++k)
+  {
+    VectorXf p1 = p0 + dirs.col(k)*scale;
+    double u1 = p1(0)/p1(2)*f_d + 320.;
+    double v1 = p1(1)/p1(2)*f_d + 240.;
+    cv::line(I, cv::Point(u0,v0), cv::Point(u1,v1),
+        CV_RGB(colors(k,0),colors(k,1),colors(k,2)), 2, CV_AA);
+
+    double arrowLen = 10.;
+    double angle = atan2(v1-v0,u1-u0);
+
+    double ru1 = u1 - arrowLen*cos(angle + M_PI*0.25);
+    double rv1 = v1 - arrowLen*sin(angle + M_PI*0.25);
+    cv::line(I, cv::Point(u1,v1), cv::Point(ru1,rv1),
+        CV_RGB(colors(k,0),colors(k,1),colors(k,2)), 2, CV_AA);
+    ru1 = u1 - arrowLen*cos(angle - M_PI*0.25);
+    rv1 = v1 - arrowLen*sin(angle - M_PI*0.25);
+    cv::line(I, cv::Point(u1,v1), cv::Point(ru1,rv1),
+        CV_RGB(colors(k,0),colors(k,1),colors(k,2)), 2, CV_AA);
+  }
+  cv::circle(I, cv::Point(u0,v0), 2, CV_RGB(0,0,0), 2, CV_AA);
+};
+
 struct CfgRtDDPvMF
 {
 
@@ -98,6 +128,8 @@ class RtDDPvMF
     {compute((uint16_t*)depth.data, depth.cols, depth.rows);};
     void compute(const uint16_t* depth, uint32_t w, uint32_t h);
 
+    Matrix3f applyConstVelModel();
+
     MatrixXf centroids(){return pddpvmf_->centroids();};
     const VectorXu& labels();
     cv::Mat labelsImg();
@@ -111,12 +143,14 @@ class RtDDPvMF
     double residual_;
     uint32_t nIter_;
   protected:
+    const static uint32_t Kmax = 10;
+
     bool haveLabels_;
     cudaPcl::TimerLog tLog_;
     CfgRtDDPvMF cfg_;
-    string resultsPath_;
     ofstream fout_;
 
+    cudaPcl::CfgSmoothNormals cfgNormals_;
     uint32_t w_, h_;
 
     uint32_t K_;
@@ -124,14 +158,11 @@ class RtDDPvMF
 
 //    boost::shared_ptr<MatrixXf> spx_; // normals
     boost::shared_ptr<dplv::ClDataGpuf> cld_; // clustered data
-    float lambda_, beta_, Q_;
     boost::mt19937 rndGen_;
 //    DDPMeansCUDA<float,Spherical<float> >* pddpvmf_;
     dplv::DDPMeansCUDA<float,dplv::Spherical<float> >* pddpvmf_;
     cudaPcl::DepthGuidedFilterGpu<float> *depthFilter_;
     cudaPcl::NormalExtractSimpleGpu<float> *normalExtract_;
-
-    VectorXu z_;
 
     void fillJET();
     float JET_r_[256];
@@ -141,14 +172,14 @@ class RtDDPvMF
 // ---------------------------------- impl -----------------------------------
 
 
-RtDDPvMF::RtDDPvMF(const CfgRtDDPvMF& cfg, double eps, uint32_t B)
+RtDDPvMF::RtDDPvMF(const CfgRtDDPvMF& cfg,
+      const cudaPcl::CfgSmoothNormals& cfgNormals)
   : haveLabels_(false),
     tLog_(cfg.pathOut+std::string("./timer.log"),2,10,"TimerLog"),
   residual_(0.0), nIter_(10),
   cfg_(cfg),
-  resultsPath_(cfg.pathOut),
+  cfgNormals_(cfgNormals),
   fout_((cfg.pathOut+std::string("./stats.log")).data(),ofstream::out),
-  lambda_(cfg.lambda), beta_(cfg.beta), Q_(cfg.Q),
   rndGen_(91)
 {
   fillJET();
@@ -156,14 +187,14 @@ RtDDPvMF::RtDDPvMF(const CfgRtDDPvMF& cfg, double eps, uint32_t B)
   shared_ptr<MatrixXf> tmp(new MatrixXf(3,1));
   (*tmp) << 1,0,0; // init just to get the dimensions right.
   cld_ = shared_ptr<dplv::ClDataGpuf>(new dplv::ClDataGpuf(tmp,0));
-  pddpvmf_ =  new dplv::DDPMeansCUDA<float,dplv::Spherical<float> >(cld_, lambda_, Q_, beta_);
+  pddpvmf_ =  new dplv::DDPMeansCUDA<float,dplv::Spherical<float> > 
+    (cld_, cfg_.lambda, cfg_.Q, cfg_.beta);
 
-  centroids_ = MatrixXf::Zero(3,1); centroids_ << 1.,0,0;
 }
 
 RtDDPvMF::~RtDDPvMF()
 {
-  if(pddpvmf_) delete pddpvmf_;
+  delete pddpvmf_;
   delete normalExtract_;
   delete depthFilter_;
   fout_.close();
@@ -211,18 +242,34 @@ void RtDDPvMF::compute(const uint16_t* depth, uint32_t w, uint32_t h)
   if(tLog_.startLogging()) pddpvmf_->dumpStats(fout_);
   tLog_.logCycle();
   haveLabels_ = false;
+}
 
-//TODO continue here
+
+Matrix3f RtDDPvMF::applyConstVelModel()
+{
+  Matrix3f deltaR = Matrix3f::Identity();
+// get them from internal since they keep track of removed clusters
+  MatrixXf centroids = pddpvmf_->centroids(); 
+  MatrixXf prevCentroids =  pddpvmf_->prevCentroids(); 
+
+  // compute all rotations from different axes
+  std::vector<MatrixXf> Rs(std::min(centroids.cols(),
+        prevCentroids.cols()));
+  for(uint32_t k=0; k<centroids.cols(); ++k)
+    if(k < prevCentroids.cols())
+    {
+      Rs[k] = dplv::rotationFromAtoB<float>(prevCentroids.col(k), 
+          centroids.col(k));
+    }
+  // compute the Karcher mean rotation
+  if(Rs.size()>0)
   {
-    boost::mutex::scoped_lock updateLock(this->updateModelMutex);
-//      pddpvmf_->rotateUninstantiated(deltaR_.transpose());
+    deltaR = dplv::SO3<float>::meanRotation(Rs,
+        pddpvmf_->counts().cast<float>(),20);
+    pddpvmf_->rotateUninstantiated(deltaR.transpose());
+    cout<<"const velocity model applied rotation"<<endl<<deltaR<<endl;
   }
-
-//  tLog_.toc(1); // total time
-//  tLog_.logCycle();
-//  cout<<"--------------------------------------------------"<<endl;
-//  tLog_.printStats(); cout<<" residual="<<residual_<<endl;
-//  cout<<"--------------------------------------------------"<<endl;
+  return deltaR;
 }
 
 const VectorXu& RtDDPvMF::labels()
@@ -230,8 +277,8 @@ const VectorXu& RtDDPvMF::labels()
   if(!haveLabels_)
   {
     if(z_.rows() != w_*h_) z_.resize(w_*h_);
-    normalExtract->uncompressCpu(pddpvmf_->z().data(),pddpvmf_->z().rows()
-       ,z_.data(),z_.rows());
+    normalExtract_->uncompressCpu(pddpvmf_->z().data(),
+        pddpvmf_->z().rows(), z_.data(), z_.rows());
     K_ = pddpvmf_->getK();
     haveLabels_ = true;
   }
@@ -241,18 +288,18 @@ const VectorXu& RtDDPvMF::labels()
 cv::Mat RtDDPvMF::labelsImg()
 {
   labels();
-  uint32_t Kmax = 10;
   cv::Mat zIrgb(h_,w_,CV_8UC3);
   for(uint32_t i=0; i<w_; i+=1)
     for(uint32_t j=0; j<h_; j+=1)
       if(z_(w_*j +i) < K_) 
       {
         uint32_t idz = z_(w_*j +i)*255/Kmax;
-        zIrgb.at<cv::Vec3b>(j,i)[0] = static_cast<uint8_t>(
+        // BGR!
+        zIrgb.at<cv::Vec3b>(j,i)[2] = static_cast<uint8_t>(
             floor(JET_r_[idz]*255));
         zIrgb.at<cv::Vec3b>(j,i)[1] = static_cast<uint8_t>(
             floor(JET_g_[idz]*255));
-        zIrgb.at<cv::Vec3b>(j,i)[2] = static_cast<uint8_t>(
+        zIrgb.at<cv::Vec3b>(j,i)[1] = static_cast<uint8_t>(
             floor(JET_b_[idz]*255));
       }else{
         zIrgb.at<cv::Vec3b>(j,i)[0] = 255;
@@ -294,7 +341,15 @@ cv::Mat RtDDPvMF::overlaySeg(cv::Mat img)
   cv::Mat zI = labelsImg();
   cv::Mat Iout;
   cv::addWeighted(rgb , 0.7, zI, 0.3, 0.0, Iout);
-  projectDirections(Iout,mfAxes(),cfgNormals_.f_d,mfAxCols_);
+
+  Matrix<uint8_t,Dynamic,Dynamic> dirColors(Kmax,3);
+  for(uint32_t k=0; k<Kmax; ++k)
+  {
+    dirColors(k,0) = static_cast<uint8_t>(floor(JET_r_[k*255/Kmax]*255));
+    dirColors(k,1) = static_cast<uint8_t>(floor(JET_g_[k*255/Kmax]*255));
+    dirColors(k,2) = static_cast<uint8_t>(floor(JET_b_[k*255/Kmax]*255));
+  }
+  projectDirections(Iout,centroids(),cfgNormals_.f_d,dirColors);
   return Iout;
 };
 
