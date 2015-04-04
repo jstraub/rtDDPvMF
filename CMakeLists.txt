@@ -1,54 +1,7 @@
 cmake_minimum_required(VERSION 2.8.1)
-
-#include(ExternalProject)
-#ExternalProject_add(dpMM
-#  GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/dpMM.git/
-#  GIT_TAG master
-#  UPDATE_COMMAND git pull
-#  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dpMM
-#  CMAKE_COMMAND cmake .
-#  BUILD_COMMAND make -j6 #dpmm #dpStickGMM dpDirMM
-#  #INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
-#  INSTALL_COMMAND cmake -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dpMM -P cmake_install.cmake
-#  #INSTALL_COMMAND make install PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dpMM
-#)
-
-#ExternalProject_add(dpMMlowVarLib
-#  GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/dpMMlowVar.git/
-#  GIT_TAG master
-#  UPDATE_COMMAND git pull
-#  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dpMMlowVar
-#  CMAKE_COMMAND cmake .
-#  BUILD_COMMAND make -j6 #dpmm #dpStickGMM dpDirMM
-#  #INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
-#  INSTALL_COMMAND cmake -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dpMMlowVar -P cmake_install.cmake
-#  #INSTALL_COMMAND make install PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dpMM
-#)
-#
-#ExternalProject_add(libCudaPcl
-#  GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/cudaPcl.git
-#  GIT_TAG master
-#  UPDATE_COMMAND git pull
-#  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/cudaPcl
-#  CMAKE_COMMAND cmake .
-#  BUILD_COMMAND make -j6 #rtmf #realtimeMF_openni
-#  #INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
-#  INSTALL_COMMAND cmake -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/cudaPcl -P cmake_install.cmake
-#  #INSTALL_COMMAND make install PREFIX=${CMAKE_CURRENT_BINARY_DIR}/rtmf
-#  )
-
-#ExternalProject_add(libRtMF
-#  GIT_REPOSITORY /data/vision/fisher/code/jstraub/gitrep/research/rtmf.git/
-#  UPDATE_COMMAND git pull
-#  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/rtmf
-#  CMAKE_COMMAND cmake .
-#  BUILD_COMMAND make -j6 #rtmf #realtimeMF_openni
-#  #INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
-#  INSTALL_COMMAND cmake -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/rtmf -P cmake_install.cmake
-#  #INSTALL_COMMAND make install PREFIX=${CMAKE_CURRENT_BINARY_DIR}/rtmf
-#)
-
 project(rtDDPvMF)
+set(POD_NAME rtDDPvMF)
+include(cmake/pods.cmake)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -72,30 +25,14 @@ FIND_PACKAGE (PCL REQUIRED)
 
 include_directories(
   include
-  $ENV{WORKSPACE_HOME}/research/global/include
-#  ./build/dpMMlowVar/include
-#  ./build/cudaPcl/include
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
-#  /usr/include
-  #$ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1.bak/
-#    $ENV{WORKSPACE_HOME}/3rdparty/include/pcl-1.7/
-#    $ENV{WORKSPACE_HOME}/3rdparty/include/vtk-5.8/
-  #/usr/include/pcl-1.7/
-#  /usr/include/ni
-  #  /usr/include/vtk-5.8/
   ${Boost_INCLUDE_DIRS}
 )
 
 link_directories(
-  $ENV{WORKSPACE_HOME}/research/global/lib
-#  $ENV{WORKSPACE_HOME}/3rdparty/lib/vtk-5.8/
   ${PCL_LIBRARY_DIRS}
   ${Boost_LIBRARY_DIRS}
-#  $ENV{WORKSPACE_HOME}/3rdparty/pcl-pcl-1.7.1/build
-  ./build/dpMMlowVar/lib/
-#  ./build/dpMM/lib/
-  ./build/cudaPcl/lib/
 )
 
 cuda_add_executable(realtimeDDPvMF_openni
@@ -106,7 +43,7 @@ cuda_add_executable(realtimeDDPvMF_openni
   )
 
 target_link_libraries (realtimeDDPvMF_openni
-  dpMMlowVar cudaPcl
+  jsCore dpMMlowVar cudaPcl
   boost_system boost_thread boost_program_options
   pcl_common pcl_io pcl_visualization pcl_filters
   OpenNI XnVNite_1_5_2
@@ -119,3 +56,5 @@ install(DIRECTORY include/ DESTINATION include/
   FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY include/ DESTINATION include/
   FILES_MATCHING PATTERN "*.hpp")
+
+pods_install_executables(realtimeDDPvMF_openni)

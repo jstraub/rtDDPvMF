@@ -157,7 +157,7 @@ class RtDDPvMF
     VectorXu z_;
 
 //    boost::shared_ptr<MatrixXf> spx_; // normals
-    boost::shared_ptr<dplv::ClDataGpuf> cld_; // clustered data
+    boost::shared_ptr<jsc::ClDataGpuf> cld_; // clustered data
     boost::mt19937 rndGen_;
 //    DDPMeansCUDA<float,Spherical<float> >* pddpvmf_;
     dplv::DDPMeansCUDA<float,dplv::Spherical<float> >* pddpvmf_;
@@ -186,7 +186,7 @@ RtDDPvMF::RtDDPvMF(const CfgRtDDPvMF& cfg,
   cout<<"inititalizing optSO3"<<endl;
   shared_ptr<MatrixXf> tmp(new MatrixXf(3,1));
   (*tmp) << 1,0,0; // init just to get the dimensions right.
-  cld_ = shared_ptr<dplv::ClDataGpuf>(new dplv::ClDataGpuf(tmp,0));
+  cld_ = shared_ptr<jsc::ClDataGpuf>(new jsc::ClDataGpuf(tmp,0));
   pddpvmf_ =  new dplv::DDPMeansCUDA<float,dplv::Spherical<float> > 
     (cld_, cfg_.lambda, cfg_.Q, cfg_.beta);
 
@@ -227,7 +227,7 @@ void RtDDPvMF::compute(const uint16_t* depth, uint32_t w, uint32_t h)
   float* d_nComp = normalExtract_->d_normalsComp(nComp);
   cout<<" -- compressed to "<<nComp<<" normals"<<endl;
   tLog_.toctic(2,3); // total time
-  pddpvmf_->nextTimeStepGpu(d_nComp,nComp,3,0);
+  pddpvmf_->nextTimeStepGpu(d_nComp,nComp,3,0,true);//false);
   for(uint32_t i=0; i<nIter_; ++i)
   {
     cout<<"@"<<i<<" :"<<endl;
@@ -241,6 +241,7 @@ void RtDDPvMF::compute(const uint16_t* depth, uint32_t w, uint32_t h)
   tLog_.toc(4);
   if(tLog_.startLogging()) pddpvmf_->dumpStats(fout_);
   tLog_.logCycle();
+  tLog_.printStats();
   haveLabels_ = false;
 }
 

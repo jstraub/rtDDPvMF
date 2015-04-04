@@ -1,4 +1,8 @@
 build
+pod-build
+jsCore
+cudaPcl
+dpMMlowVar
 *~
 *.pyc
 *.csv

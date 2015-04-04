@@ -81,7 +81,7 @@ class RealtimeSpkm : public cudaPcl::OpenniSmoothNormalsGpu
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroidsPc_;
 
 //    boost::shared_ptr<MatrixXf> spx_; // normals
-    boost::shared_ptr<dplv::ClDataGpuf> cld_; // clustered data
+    boost::shared_ptr<jsc::ClDataGpuf> cld_; // clustered data
     float lambda_, beta_, Q_;
     boost::mt19937 rndGen_;
 
@@ -108,7 +108,7 @@ RealtimeSpkm::RealtimeSpkm(std::string pathOut, double f_d, double eps, uint32_t
   cout<<"inititalizing optSO3"<<endl;
   shared_ptr<MatrixXf> tmp(new MatrixXf(3,1));
   (*tmp) << 1,0,0; // init just to get the dimensions right.
-  cld_ = shared_ptr<dplv::ClDataGpuf>(new dplv::ClDataGpuf(tmp,K));
+  cld_ = shared_ptr<jsc::ClDataGpuf>(new jsc::ClDataGpuf(tmp,K));
 
   pspkm_ =  new dplv::KMeansCUDA<float,dplv::Spherical<float> >(cld_);
 
