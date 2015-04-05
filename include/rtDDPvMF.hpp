@@ -1,3 +1,6 @@
+/* Copyright (c) 2015, Julian Straub <jstraub@csail.mit.edu> Licensed
+ * under the MIT license. See the license file LICENSE.
+ */
 #pragma once
 
 #include <root_includes.hpp>
@@ -36,7 +39,7 @@
 #include <dpMMlowVar/kmeansCUDA.hpp>
 #include <dpMMlowVar/SO3.hpp>
 
-#include <cudaPcl/timerLog.hpp>
+#include <jsCore/timerLog.hpp>
 #include <cudaPcl/normalExtractSimpleGpu.hpp>                                 
 #include <cudaPcl/depthGuidedFilter.hpp> 
 
@@ -146,10 +149,10 @@ class RtDDPvMF
     const static uint32_t Kmax = 10;
 
     bool haveLabels_;
-    cudaPcl::TimerLog tLog_;
-    CfgRtDDPvMF cfg_;
+    jsc::TimerLog tLog_;
     ofstream fout_;
 
+    CfgRtDDPvMF cfg_;
     cudaPcl::CfgSmoothNormals cfgNormals_;
     uint32_t w_, h_;
 
@@ -174,12 +177,12 @@ class RtDDPvMF
 
 RtDDPvMF::RtDDPvMF(const CfgRtDDPvMF& cfg,
       const cudaPcl::CfgSmoothNormals& cfgNormals)
-  : haveLabels_(false),
+  :  residual_(0.0), nIter_(10),
+    haveLabels_(false),
     tLog_(cfg.pathOut+std::string("./timer.log"),2,10,"TimerLog"),
-  residual_(0.0), nIter_(10),
+  fout_((cfg.pathOut+std::string("./stats.log")).data(),ofstream::out),
   cfg_(cfg),
   cfgNormals_(cfgNormals),
-  fout_((cfg.pathOut+std::string("./stats.log")).data(),ofstream::out),
   rndGen_(91)
 {
   fillJET();

@@ -1,3 +1,6 @@
+/* Copyright (c) 2015, Julian Straub <jstraub@csail.mit.edu> Licensed
+ * under the MIT license. See the license file LICENSE.
+ */
 #ifndef ROOTHEADERS_HPP_INCLUDED
 #define ROOTHEADERS_HPP_INCLUDED
 #ifdef __GNUC__

@@ -1,3 +1,6 @@
+/* Copyright (c) 2015, Julian Straub <jstraub@csail.mit.edu> Licensed
+ * under the MIT license. See the license file LICENSE.
+ */
 #pragma once
 
 #include <root_includes.hpp>
@@ -36,7 +39,7 @@
 #include <dpMMlowVar/kmeansCUDA.hpp>
 #include <dpMMlowVar/SO3.hpp>
 
-#include <cudaPcl/timerLog.hpp>
+#include <jsCore/timerLog.hpp>
 #include <cudaPcl/openniSmoothNormalsGpu.hpp>
 
 using namespace Eigen;
@@ -56,7 +59,7 @@ class RealtimeSpkm : public cudaPcl::OpenniSmoothNormalsGpu
 
     virtual void normals_cb(float* d_normals, uint8_t* haveData, uint32_t w, uint32_t h);
 
-    cudaPcl::TimerLog tLog_;
+    jsc::TimerLog tLog_;
     double residual_;
     uint32_t nIter_;
 
