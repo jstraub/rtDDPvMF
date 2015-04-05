@@ -7,6 +7,7 @@
 #include <rtDDPvMF/rtDDPvMF.hpp>
 #include <rtDDPvMF/rtSpkm.hpp>
 #include <rtDDPvMF/realtimeDDPvMF_openni.hpp>
+#include <rtDDPvMF/rtSpkm_openni.hpp>
 
 // Utilities and system includes
 //#include <helper_functions.h>
@@ -94,7 +95,8 @@ int main (int argc, char** argv)
   }else{
     cout<<"rtSpkm K="<<K<<endl;
     cout<<"output path: "<<cfg.pathOut<<endl;
-    RealtimeSpkm v(cfg.pathOut,540.,0.2*0.2,10,K);
+    shared_ptr<RtSpkm> pRtSpkm(new RtSpkm(cfg.pathOut,K,cfgNormals));
+    RealtimeSpkm v(pRtSpkm);
     v.run ();
   }
   cout<<cudaDeviceReset()<<endl;

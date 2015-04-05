@@ -12,23 +12,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/contrib/contrib.hpp>
 
-#include <boost/thread.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <Eigen/Dense>
 
-// CUDA runtime
-//#include <cuda_runtime.h>
-
-// Utilities and system includes
-//#include <helper_functions.h>
-//#include <nvidia/helper_cuda.h>
-
-//#include <cuda_pc_helpers.h>
-//#include <convolutionSeparable_common.h>
-//#include <convolutionSeparable_common_small.h>
-//#include <cv_helpers.hpp>
-//#include <pcl_helpers.hpp>
 #include <pcl/impl/point_types.hpp>
 
 //#include <vtkWindowToImageFilter.h>
