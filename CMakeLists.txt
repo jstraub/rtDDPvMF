@@ -48,7 +48,8 @@ cuda_add_executable(realtimeDDPvMF_openni
 target_link_libraries (realtimeDDPvMF_openni
   jsCore dpMMlowVar cudaPcl
   boost_system boost_thread boost_program_options
-  pcl_common pcl_io pcl_visualization pcl_filters
+  pcl_common pcl_io pcl_visualization pcl_filters pcl_search
+  pcl_features
   OpenNI XnVNite_1_5_2
   vtkCommon vtkFiltering vtkRendering vtkGraphics
   opencv_core opencv_highgui opencv_contrib opencv_imgproc)
