@@ -1,7 +1,7 @@
 /* Copyright (c) 2015, Julian Straub <jstraub@csail.mit.edu> Licensed
  * under the MIT license. See the license file LICENSE.
  */
-#include<pcl_helpers.hpp>
+#include <rtDDPvMF/pcl_helpers.hpp>
 
 bool updateCosy(const boost::shared_ptr<pcl::visualization::PCLVisualizer>& viewer
     ,const Matrix3f& R, string prefix, float scale)

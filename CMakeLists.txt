@@ -55,9 +55,17 @@ target_link_libraries (realtimeDDPvMF_openni
 
 ADD_DEPENDENCIES(realtimeDDPvMF_openni dpMMlowVarLib libCudaPcl)
 
-install(DIRECTORY include/ DESTINATION include/
-  FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY include/ DESTINATION include/
-  FILES_MATCHING PATTERN "*.hpp")
+#install(DIRECTORY include/rtDDPvMF/ DESTINATION include/rtDDPvMF/
+#  FILES_MATCHING PATTERN "*.h")
+#install(DIRECTORY include/rtDDPvMF/ DESTINATION include/rtDDPvMF/
+#  FILES_MATCHING PATTERN "*.hpp")
 
 pods_install_executables(realtimeDDPvMF_openni)
+pods_install_headers(
+  ./include/rtDDPvMF/pcl_helpers.hpp
+  ./include/rtDDPvMF/realtimeDDPvMF_openni.hpp
+  ./include/rtDDPvMF/root_includes.hpp
+  ./include/rtDDPvMF/rtDDPvMF.hpp
+  ./include/rtDDPvMF/rtSpkm.hpp
+  ./include/rtDDPvMF/rtSpkm_openni.hpp
+  DESTINATION rtDDPvMF)

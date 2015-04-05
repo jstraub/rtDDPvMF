@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include <string>
-#include <realtimeDDPvMF.hpp>
-#include <rtDDPvMF.hpp>
-#include <rtSpkm.hpp>
+#include <rtDDPvMF/rtDDPvMF.hpp>
+#include <rtDDPvMF/rtSpkm.hpp>
+#include <rtDDPvMF/realtimeDDPvMF_openni.hpp>
 
 // Utilities and system includes
 //#include <helper_functions.h>

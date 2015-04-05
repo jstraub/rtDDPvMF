@@ -3,10 +3,8 @@
  */
 #pragma once
 
-#include <root_includes.hpp>
-
 #include <cudaPcl/openniVisualizer.hpp>
-#include <rtDDPvMF.hpp>
+#include <rtDDPvMF/rtDDPvMF.hpp>
 
 using namespace Eigen;
 

@@ -64,14 +64,16 @@ configure:
 
 
 checkout:
-	git clone /data/vision/fisher/code/jstraub/gitrep/research/jsCore.git/
-	git clone /data/vision/fisher/code/jstraub/gitrep/research/cudaPcl.git/
+	git clone git@github.com:jstraub/jsCore.git
+	git clone git@github.com:jstraub/cudaPcl.git
 	git clone /data/vision/fisher/code/jstraub/gitrep/research/dpMMlowVar.git
+	svn co https://svn.csail.mit.edu/rrg_pods/drivers/kinect
 
 update:
 	cd cudaPcl; git pull; cd -
 	cd dpMMlowVar; git pull; cd -
 	cd jsCore; git pull; cd -
+	cd kinect; svn up; cd -
 
 # other (custom) targets are passed through to the cmake-generated Makefile
 %::
