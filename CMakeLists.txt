@@ -54,14 +54,27 @@ target_link_libraries (realtimeDDPvMF_openni
   vtkCommon vtkFiltering vtkRendering vtkGraphics
   opencv_core opencv_highgui opencv_contrib opencv_imgproc)
 
-ADD_DEPENDENCIES(realtimeDDPvMF_openni dpMMlowVarLib libCudaPcl)
+cuda_add_executable(realtimeDDPvMF_file
+  ./src/realtimeDDPvMF_file.cpp
+  ./src/pcl_helpers.cpp
+  )
 
+target_link_libraries (realtimeDDPvMF_file
+  jsCore dpMMlowVar cudaPcl
+  boost_system boost_thread boost_program_options
+  pcl_common pcl_io pcl_visualization pcl_filters pcl_search
+  pcl_features
+  OpenNI XnVNite_1_5_2
+  vtkCommon vtkFiltering vtkRendering vtkGraphics
+  opencv_core opencv_highgui opencv_contrib opencv_imgproc)
+
+#ADD_DEPENDENCIES(realtimeDDPvMF_openni dpMMlowVarLib libCudaPcl)
 #install(DIRECTORY include/rtDDPvMF/ DESTINATION include/rtDDPvMF/
 #  FILES_MATCHING PATTERN "*.h")
 #install(DIRECTORY include/rtDDPvMF/ DESTINATION include/rtDDPvMF/
 #  FILES_MATCHING PATTERN "*.hpp")
 
-pods_install_executables(realtimeDDPvMF_openni)
+pods_install_executables(realtimeDDPvMF_openni realtimeDDPvMF_file)
 pods_install_headers(
   ./include/rtDDPvMF/pcl_helpers.hpp
   ./include/rtDDPvMF/realtimeDDPvMF_openni.hpp

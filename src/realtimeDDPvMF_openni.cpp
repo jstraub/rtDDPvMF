@@ -89,6 +89,7 @@ int main (int argc, char** argv)
   {
     cout<<"rtDDPvMFmeans lambdaDeg="<<cfg.lambdaDeg_<<" beta="<<cfg.beta
       <<"nFramesSurvive="<<cfg.nFramesSurvive_<<endl;
+    cout<<"output path: "<<cfg.pathOut<<endl;
     shared_ptr<RtDDPvMF> pRtDdpvMF(new RtDDPvMF(cfg,cfgNormals));
     RealtimeDDPvMF v(pRtDdpvMF);
     v.run ();
