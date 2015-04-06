@@ -143,7 +143,7 @@ int main (int argc, char** argv)
       for(uint32_t i=0; i<T; ++i)
         pRtDDPvMF->compute(reinterpret_cast<uint16_t*>(depth.data),
             depth.cols,depth.rows);
-      Iout = pRtDDPvMF->overlaySeg(rgb);
+      Iout = pRtDDPvMF->overlaySeg(rgb,false,true);
 //      cv::Mat Iout = pRtDDPvMF->overlaySeg(gray);
       if(vm.count("display")) 
       {
@@ -159,7 +159,7 @@ int main (int argc, char** argv)
       for(uint32_t i=0; i<T; ++i)
         pRtSpkm->compute(reinterpret_cast<uint16_t*>(depth.data),
             depth.cols,depth.rows);
-      Iout = pRtSpkm->overlaySeg(rgb);
+      Iout = pRtSpkm->overlaySeg(rgb,false,true);
 //      cv::Mat Iout = pRtSpkm->overlaySeg(gray);
       if(vm.count("display")) 
       {
