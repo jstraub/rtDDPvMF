@@ -149,7 +149,7 @@ int main (int argc, char** argv)
       {
         dI = pRtDDPvMF->smoothDepthImg();
         nI = pRtDDPvMF->normalsImg();
-        zI = pRtDDPvMF->labelsImg();
+        zI = pRtDDPvMF->labelsImg(true);
       }
       centroids = pRtDDPvMF->centroids();
 
@@ -165,7 +165,7 @@ int main (int argc, char** argv)
       {
         dI = pRtSpkm->smoothDepthImg();
         nI = pRtSpkm->normalsImg();
-        zI = pRtSpkm->labelsImg();
+        zI = pRtSpkm->labelsImg(true);
       }
       centroids = pRtSpkm->centroids();
     }
