@@ -69,7 +69,15 @@ reRun = True
 printCmd = True
 onlyPaperEval = True
 
-paperEval = ['bedroom_0026_914',
+paperEval = [
+'bathroom_0028_691',
+'home_office_0012_395',
+'kitchen_0037_831',
+'bedroom_0085_1084',
+'living_room_0064_1314',
+'bathroom_0015_664',
+'office_kitchen_0001_409',
+'bedroom_0026_914',
 'bedroom_0032_935',
 'bedroom_0043_959',
 'conference_room_0002_342',
