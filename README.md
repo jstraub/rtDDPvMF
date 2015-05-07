@@ -1,4 +1,4 @@
-### Real-time directional segmentation from Kinect RGB-D stream
+### Real-time Directional Segmentation from Kinect RGB-D Stream
 
 [![DDP-vMF-means](./doc/ddpVideoPreview.png)](http://www.youtube.com/watch?v=wLP18q80oAE)
 
@@ -7,7 +7,7 @@ segmentation from Kinect RGB-D streams. It relies on the
 [dpMMlowVar](https://github.com/jstraub/dpMMlowVar)
 library for the actual implementation of the DDP-vMF-means algorithm.
 The approach and the algorithm is described in more detail on our
-[project page](http://www.jstraub.de/small-variance-nonparametric-clustering-on-the-hypersphere/).
+[project page](http://www.jstraub.de/small-variance-nonparametric-clustering-on-the-hypersphere/) and [CVPR 2015 paper](http://www.jstraub.de/download/straub2015ddpvmf.pdf). The algorithms are described in more detail in the [supplement](http://www.jstraub.de/download/straub2015ddpvmf_supp.pdf).
 See below for install instructions.
 
 If you use DP-vMF-means or DDP-vMF-means please cite:
