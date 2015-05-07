@@ -1,6 +1,6 @@
 ### Real-time directional segmentation from Kinect RGB-D stream using DDP-vMF-means
 
-[![DDP-vMF-means](http://img.youtube.com/vi/wLP18q80oAE/0.jpg)](http://www.youtube.com/watch?v=wLP18q80oAE)
+-> [![DDP-vMF-means](http://img.youtube.com/vi/wLP18q80oAE/0.jpg)](http://www.youtube.com/watch?v=wLP18q80oAE) <-
 
 This package implements real-time temporally consistent directional
 segmentation from Kinect RGB-D streams. It relies on the dpMMlowVar
