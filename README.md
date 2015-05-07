@@ -1,10 +1,11 @@
 ### Real-time directional segmentation from Kinect RGB-D stream using DDP-vMF-means
 
--> [![DDP-vMF-means](http://img.youtube.com/vi/wLP18q80oAE/0.jpg)](http://www.youtube.com/watch?v=wLP18q80oAE) <-
+[![DDP-vMF-means](http://img.youtube.com/vi/wLP18q80oAE/0.jpg)](http://www.youtube.com/watch?v=wLP18q80oAE)
 
 This package implements real-time temporally consistent directional
 segmentation from Kinect RGB-D streams. It relies on the dpMMlowVar
-library for the actual implementation of the DDP-vMF-means algorithm. 
+library for the actual implementation of the DDP-vMF-means algorithm.
+See below for install instructions.
 
 If you use DP-vMF-means or DDP-vMF-means please cite:
 ```
@@ -14,11 +15,13 @@ Julian Straub, Trevor Campbell, Jonathan P. How, John W. Fisher III.
 ```
 
 ### Dependencies
-This code is dependent on Eigen3, Boost and CUDA.
+This code is dependent on Eigen3, Boost, CUDA, OpenCV and PCL.
 It has been tested on Ubuntu 14.04 with 
 - Eigen3 (3.0.5) 
-- Boost (1.52)
+- Boost (1.54)
 - CUDA (6.5)
+- OpenCV ()
+- PCL ()
 
 ### Install
 
