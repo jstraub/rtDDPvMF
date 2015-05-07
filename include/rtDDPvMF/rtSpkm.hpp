@@ -12,7 +12,7 @@
 
 #include <Eigen/Dense>
 
-#include <pcl/impl/point_types.hpp>
+//#include <pcl/impl/point_types.hpp>
 
 #include <dpMMlowVar/sphericalData.hpp>
 #include <dpMMlowVar/kmeansCUDA.hpp>

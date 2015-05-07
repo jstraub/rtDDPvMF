@@ -20,8 +20,8 @@ It has been tested on Ubuntu 14.04 with
 - Eigen3 (3.0.5) 
 - Boost (1.54)
 - CUDA (6.5)
-- OpenCV ()
-- PCL ()
+- OpenCV (2.4)
+- PCL (1.7)
 
 ### Install
 
@@ -29,10 +29,11 @@ This package uses [http://sourceforge.net/p/pods/home/Home/](the pods build syst
 
 - *Linux:* 
 
-    Install Eigen3 and Boost
+    Install Eigen3, Boost, OpenCV, and PCL
 
     ```
-    sudo apt-get install libeigen3-dev libboost-dev 
+    sudo apt-get install libeigen3-dev libboost-dev libopencv-dev
+    libpcl-1.7-all-dev
     ```
 
     Install the appropriate CUDA version matching with your nvidia
@@ -45,8 +46,15 @@ This package uses [http://sourceforge.net/p/pods/home/Home/](the pods build syst
     git clone https://github.com/jstraub/rtDDPvMF.git; cd rtDDPvMF;
     make checkout; make configure; make -j6;
     ```
+### Getting Started
+
+Plug in your Kinect and run
+```
+./build/bin/realtimeDDPvMF_openni --lambdaDeg 100 
+```
 
 ### Usage 
+
 ```
 ./build/bin/realtimeDDPvMF_openni -h
 Allowed options:

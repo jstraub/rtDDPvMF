@@ -11,12 +11,12 @@
 #include <string>
 #include <sstream>
 #include <stdio.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/common/time.h>
-#include <pcl/filters/filter.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/registration/registration.h>
+//#include <pcl/point_cloud.h>
+//#include <pcl/point_types.h>
+//#include <pcl/visualization/pcl_visualizer.h>
+//#include <pcl/common/time.h>
+//#include <pcl/filters/filter.h>
+//#include <pcl/filters/voxel_grid.h>
+//#include <pcl/registration/registration.h>
 
 #endif

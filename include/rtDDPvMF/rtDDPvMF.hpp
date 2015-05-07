@@ -15,7 +15,7 @@
 
 #include <Eigen/Dense>
 
-#include <pcl/impl/point_types.hpp>
+//#include <pcl/impl/point_types.hpp>
 
 //#include <vtkWindowToImageFilter.h>
 //#include <vtkPNGWriter.h>
