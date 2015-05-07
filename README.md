@@ -32,8 +32,7 @@ This package uses [http://sourceforge.net/p/pods/home/Home/](the pods build syst
     Install Eigen3, Boost, OpenCV, and PCL
 
     ```
-    sudo apt-get install libeigen3-dev libboost-dev libopencv-dev
-    libpcl-1.7-all-dev
+    sudo apt-get install libeigen3-dev libboost-dev libopencv-dev libpcl-1.7-all-dev
     ```
 
     Install the appropriate CUDA version matching with your nvidia
@@ -48,7 +47,7 @@ This package uses [http://sourceforge.net/p/pods/home/Home/](the pods build syst
     ```
 ### Getting Started
 
-Plug in your Kinect and run
+Plug in your Kinect and run the following from the rtDDPvMF folder:
 ```
 ./build/bin/realtimeDDPvMF_openni --lambdaDeg 100 
 ```
