@@ -28,7 +28,11 @@ It has been tested on Ubuntu 14.04 with
 
 ### Install
 
-This package uses [the pods build system](http://sourceforge.net/p/pods/home/Home/).
+This package uses [the pods build
+system](http://sourceforge.net/p/pods/home/Home/). Used widely at CSAIL
+MIT the build system makes it easy to break up software projects into
+small packages that can be checked out and compiled automatically (see
+below).
 
 - *Linux:* 
 

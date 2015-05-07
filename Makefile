@@ -66,8 +66,9 @@ configure:
 checkout:
 	git clone git@github.com:jstraub/jsCore.git
 	git clone git@github.com:jstraub/cudaPcl.git
-	git clone /data/vision/fisher/code/jstraub/gitrep/research/dpMMlowVar.git
-	svn co https://svn.csail.mit.edu/rrg_pods/drivers/kinect
+	git clone git@github.com:jstraub/dpMMlowVar.git
+#	git clone /data/vision/fisher/code/jstraub/gitrep/research/dpMMlowVar.git
+#	svn co https://svn.csail.mit.edu/rrg_pods/drivers/kinect
 
 update:
 	cd cudaPcl; git pull; cd -
