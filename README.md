@@ -1,10 +1,10 @@
-### Real-time directional segmentation from Kinect RGB-D stream using DDP-vMF-means
+### Real-time directional segmentation from Kinect RGB-D stream
 
 [![DDP-vMF-means](http://img.youtube.com/vi/wLP18q80oAE/0.jpg)](http://www.youtube.com/watch?v=wLP18q80oAE)
 
 This package implements real-time temporally consistent directional
 segmentation from Kinect RGB-D streams. It relies on the
-[https://github.com/jstraub/dpMMlowVar](dpMMlowVar)
+[dpMMlowVar](https://github.com/jstraub/dpMMlowVar)
 library for the actual implementation of the DDP-vMF-means algorithm.
 See below for install instructions.
 
@@ -26,7 +26,7 @@ It has been tested on Ubuntu 14.04 with
 
 ### Install
 
-This package uses [http://sourceforge.net/p/pods/home/Home/](the pods build system).
+This package uses [the pods build system](http://sourceforge.net/p/pods/home/Home/).
 
 - *Linux:* 
 
