@@ -3,7 +3,8 @@
 [![DDP-vMF-means](http://img.youtube.com/vi/wLP18q80oAE/0.jpg)](http://www.youtube.com/watch?v=wLP18q80oAE)
 
 This package implements real-time temporally consistent directional
-segmentation from Kinect RGB-D streams. It relies on the dpMMlowVar
+segmentation from Kinect RGB-D streams. It relies on the
+[https://github.com/jstraub/dpMMlowVar](dpMMlowVar)
 library for the actual implementation of the DDP-vMF-means algorithm.
 See below for install instructions.
 
@@ -42,9 +43,17 @@ This package uses [http://sourceforge.net/p/pods/home/Home/](the pods build syst
     Clone this repository and compile the code:
 
     ```
-    git clone https://github.com/jstraub/rtDDPvMF.git; cd rtDDPvMF;
-    make checkout; make configure; make -j6;
+    git clone git@github.com:jstraub/rtDDPvMF; cd rtDDPvMF;
+    make checkout; make configure; make -j6; make install;
     ```
+    
+    Note that this will checkout several other necessary repositories.
+    To update all repositories run
+    
+    ```
+    make update; make configure; make -j6; make install;
+    ```
+
 ### Getting Started
 
 Plug in your Kinect and run the following from the rtDDPvMF folder:
