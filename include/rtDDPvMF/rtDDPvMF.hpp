@@ -85,6 +85,8 @@ class RtDDPvMF : public cudaPcl::DirSeg
 
     virtual MatrixXf centroids(){return pddpvmf_->centroids();};
     virtual const VectorXu& labels();
+    uint32_t GetK() {return pddpvmf_->getK();};
+    MatrixXf GetxSums() { return cld_->xSums();};
 
     double residual_;
     uint32_t nIter_;

@@ -134,6 +134,7 @@ int main (int argc, char** argv)
     cv::Mat zI;
     cv::Mat Iout;
     MatrixXf centroids;
+    VectorXf concentrations;
 
     if(K<0)
     {
@@ -152,7 +153,12 @@ int main (int argc, char** argv)
         zI = pRtDDPvMF->labelsImg(true);
       }
       centroids = pRtDDPvMF->centroids();
-
+      const VectorXu z = pRtDDPvMF->labels();
+      uint32_t K = pRtDDPvMF->GetK();
+      concentrations = VectorXf::Zero(K);
+      MatrixXf xSum = pRtDDPvMF->GetxSums();
+      for (uint32_t k = 0; k < K; ++k) 
+          concentrations(k) = (xSum.col(k)).norm();
     }else{
       cout<<"rtSpkm K="<<K<<endl;
       cout<<"output path: "<<cfg.pathOut<<endl;
@@ -168,6 +174,12 @@ int main (int argc, char** argv)
         zI = pRtSpkm->labelsImg(true);
       }
       centroids = pRtSpkm->centroids();
+      const VectorXu z = pRtSpkm->labels();
+      uint32_t K = pRtSpkm->GetK();
+      concentrations = VectorXf::Zero(K);
+      MatrixXf xSum = pRtSpkm->GetxSums();
+      for (uint32_t k = 0; k < K; ++k) 
+          concentrations(k) = (xSum.col(k)).norm();
     }
 
     if(vm.count("display")) 
@@ -181,6 +193,7 @@ int main (int argc, char** argv)
 
     if(vm.count("out"))
     {
+
       cout<<" writing out put to "<<endl
         <<(vm["out"].as<string>()+"_rgbLabels.png")<<endl
         <<vm["out"].as<string>()+"_cRmf.csv"<<endl;
@@ -193,6 +206,9 @@ int main (int argc, char** argv)
           out << centroids(i,j)<<" ";
         out << centroids(i,centroids.cols()-1)<<endl;
       }
+      for(uint32_t i=0; i<concentrations.size()-1;++i) 
+        out << concentrations(i) << " ";
+      out << concentrations(concentrations.size()-1) << std::endl;
       out.close();
     }
   }

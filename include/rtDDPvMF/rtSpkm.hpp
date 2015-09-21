@@ -37,6 +37,8 @@ class RtSpkm : public cudaPcl::DirSeg
     ~RtSpkm();
 
     virtual MatrixXf centroids(){return pspkm_->centroids();};
+    uint32_t GetK() {return pspkm_->getK();};
+    MatrixXf GetxSums() { return cld_->xSums();};
 
     double residual_;
     uint32_t nIter_;
