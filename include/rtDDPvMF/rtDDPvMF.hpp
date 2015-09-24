@@ -87,6 +87,7 @@ class RtDDPvMF : public cudaPcl::DirSeg
     virtual const VectorXu& labels();
     uint32_t GetK() {return pddpvmf_->getK();};
     MatrixXf GetxSums() { return cld_->xSums();};
+    VectorXf GetCounts() { return cld_->counts();};
 
     double residual_;
     uint32_t nIter_;

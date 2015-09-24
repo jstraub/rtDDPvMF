@@ -135,6 +135,7 @@ int main (int argc, char** argv)
     cv::Mat Iout;
     MatrixXf centroids;
     VectorXf concentrations;
+    VectorXf proportions;
 
     if(K<0)
     {
@@ -155,10 +156,24 @@ int main (int argc, char** argv)
       centroids = pRtDDPvMF->centroids();
       const VectorXu z = pRtDDPvMF->labels();
       uint32_t K = pRtDDPvMF->GetK();
+      proportions = pRtDDPvMF->GetCounts();
+      proportions /= proportions.sum();
       concentrations = VectorXf::Zero(K);
-      MatrixXf xSum = pRtDDPvMF->GetxSums();
+
+      cv::Mat normals = pRtDDPvMF->normalsImgRaw();
+      cv::Mat depth = pRtDDPvMF->smoothDepth();
+      MatrixXf xSum = MatrixXf::Zero(3,K);
+      for (uint32_t i=0; i<normals.cols; ++i) 
+        for (uint32_t j=0; j<normals.rows; ++j) 
+          if(z(normals.cols*j +i) < K) {
+            Eigen::Map<Matrix<float,3,1> > q(&(normals.at<cv::Vec3f>(j,i)[0]));
+            float d = depth.at<float>(j,i);
+            float scale = d/cfg.f_d;
+            xSum.col(z(normals.cols*j +i)) += q*scale;
+          }
+      std::cout<< pRtDDPvMF->GetxSums() << " vs weighted: " << xSum << std::endl;
       for (uint32_t k = 0; k < K; ++k) 
-          concentrations(k) = (xSum.col(k)).norm();
+        concentrations(k) = (xSum.col(k)).norm();
     }else{
       cout<<"rtSpkm K="<<K<<endl;
       cout<<"output path: "<<cfg.pathOut<<endl;
@@ -176,10 +191,12 @@ int main (int argc, char** argv)
       centroids = pRtSpkm->centroids();
       const VectorXu z = pRtSpkm->labels();
       uint32_t K = pRtSpkm->GetK();
+      proportions = pRtSpkm->GetCounts();
+      proportions /= proportions.sum();
       concentrations = VectorXf::Zero(K);
       MatrixXf xSum = pRtSpkm->GetxSums();
       for (uint32_t k = 0; k < K; ++k) 
-          concentrations(k) = (xSum.col(k)).norm();
+        concentrations(k) = (xSum.col(k)).norm();
     }
 
     if(vm.count("display")) 
@@ -209,6 +226,9 @@ int main (int argc, char** argv)
       for(uint32_t i=0; i<concentrations.size()-1;++i) 
         out << concentrations(i) << " ";
       out << concentrations(concentrations.size()-1) << std::endl;
+      for(uint32_t i=0; i<proportions.size()-1;++i) 
+        out << proportions(i) << " ";
+      out << proportions(proportions.size()-1) << std::endl;
       out.close();
     }
   }
