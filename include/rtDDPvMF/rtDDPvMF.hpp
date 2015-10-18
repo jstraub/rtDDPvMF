@@ -85,9 +85,33 @@ class RtDDPvMF : public cudaPcl::DirSeg
 
     virtual MatrixXf centroids(){return pddpvmf_->centroids();};
     virtual const VectorXu& labels();
-    uint32_t GetK() {return pddpvmf_->getK();};
+    uint32_t GetK() {
+      return (pddpvmf_->counts().array() > 0).matrix().cast<uint32_t>().sum();
+    }
     MatrixXf GetxSums() { return cld_->xSums();};
-    VectorXf GetCounts() { return cld_->counts();};
+//    VectorXf GetCounts() { return cld_->counts();};
+    VectorXf GetCounts() {
+      uint32_t K = (pddpvmf_->counts().array() > 0).matrix().cast<uint32_t>().sum();
+      VectorXf counts(K);
+      uint32_t k = 0;
+      for (uint32_t i =0; i<pddpvmf_->counts().rows(); ++i)
+        if (pddpvmf_->counts()(i) > 0)
+          counts(k++) = pddpvmf_->counts()(i);
+      return counts;
+    };
+
+    MatrixXf GetCentroids() const {
+      std::cout << "cs: " << cld_->counts().transpose() << std::endl;
+      std::cout << pddpvmf_->centroids() << std::endl;
+      uint32_t K = (pddpvmf_->counts().array() > 0).matrix().cast<uint32_t>().sum();
+      std::cout << "K: " << K << std::endl;
+      MatrixXf centroids(3,K);
+      uint32_t k = 0;
+      for (uint32_t i =0; i<pddpvmf_->counts().rows(); ++i)
+        if (pddpvmf_->counts()(i) > 0)
+          centroids.col(k++) = pddpvmf_->centroids().col(i);
+      return centroids;
+    }
 
     double residual_;
     uint32_t nIter_;
