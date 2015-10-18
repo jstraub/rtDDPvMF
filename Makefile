@@ -48,6 +48,9 @@ clean:
 	-if [ -d pod-build ]; then $(MAKE) -C pod-build clean; rm -rf pod-build; fi
 	@# Place additional commands here if you have any
 
+all: pod-build/Makefile
+	$(MAKE) -C pod-build all install
+
 pod-build/Makefile:
 	$(MAKE) configure
 
