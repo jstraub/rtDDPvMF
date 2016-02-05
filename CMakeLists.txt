@@ -75,7 +75,7 @@ if(OPENNI)
     boost_system boost_thread boost_program_options
     pcl_common pcl_io pcl_visualization pcl_filters pcl_search
     pcl_features
-    OpenNI XnVNite_1_5_2
+    OpenNI #XnVNite_1_5_2
     vtkCommon vtkFiltering vtkRendering vtkGraphics
 #    opencv_core opencv_highgui opencv_contrib opencv_imgproc
     ${OpenCV_LIBS}
@@ -101,7 +101,7 @@ if(OPENNI)
     boost_system boost_thread boost_program_options
     pcl_common pcl_io pcl_visualization pcl_filters pcl_search
     pcl_features
-    OpenNI XnVNite_1_5_2
+    OpenNI #XnVNite_1_5_2
     vtkCommon vtkFiltering vtkRendering vtkGraphics
     ${OpenCV_LIBS}
     )
@@ -131,7 +131,7 @@ if(LCM OR DRC)
     boost_system boost_thread boost_program_options
     pcl_common pcl_io pcl_visualization pcl_filters pcl_search
     pcl_features
-    OpenNI XnVNite_1_5_2
+    OpenNI #XnVNite_1_5_2
     vtkCommon vtkFiltering vtkRendering vtkGraphics
     opencv_core opencv_highgui opencv_contrib opencv_imgproc
     opencv_contrib
